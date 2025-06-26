@@ -16,12 +16,48 @@
     <script>
         const apiUrl = "https://checkin-system-fcg0.onrender.com";
 
-        function sendRequest(type) {
-            const name = document.getElementById("nameInput").value;
-            fetch(`${apiUrl}/${type}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
+<<<<<<< HEAD
+    function sendRequest(type) {
+    const name = document.getElementById("nameInput").value;
+    fetch(`${apiUrl}/${type}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+}
+
+if (!navigator.geolocation) {
+    statusEl.textContent = "❌ Din webbläsare stödjer inte platstjänster.";
+    return;
+}
+
+            }
+
+            statusEl.textContent = "📍 Hämtar platsinformation...";
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const data = {
+                        name: name.trim(),
+                        type: type,
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+
+                    fetch("https://checkin-system.onrender.com/log", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data)
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        statusEl.textContent = result.message;
+                    })
+                    .catch(error => {
+                        statusEl.textContent = "❌ Ett fel uppstod vid kommunikation med servern.";
+                    });
+>>>>>>> fe8b075 (Svenska frontend-filer + förberedelser för rebase)
                 },
                 body: JSON.stringify({ name })
             })
