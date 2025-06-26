@@ -3,66 +3,39 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Städfirma RVL RASA AB - In/Utcheckning</title>
+    <title>Städfirma RVL RASA AB</title>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding: 20px;">
-
-    <h2>Städfirma RVL RASA AB</h2>
+<body>
+    <h1>Städfirma RVL RASA AB</h1>
     <p>Ange ditt namn och välj om du vill checka in eller checka ut.</p>
-
-    <input type="text" id="nameInput" placeholder="Ditt namn" style="padding: 10px; width: 80%; max-width: 300px;" />
-    <br><br>
-
-    <button onclick="submitData('in')" style="padding: 10px 20px;">✅ Checka in</button>
-    <button onclick="submitData('out')" style="padding: 10px 20px;">❌ Checka ut</button>
-
-    <p id="statusMessage" style="margin-top: 20px; font-weight: bold;"></p>
+    <input type="text" id="nameInput" placeholder="Namn">
+    <button onclick="checkIn()">✅ Checka in</button>
+    <button onclick="checkOut()">❌ Checka ut</button>
+    <p id="result"></p>
 
     <script>
-        function submitData(type) {
-            const name = document.getElementById('nameInput').value;
-            const statusEl = document.getElementById('statusMessage');
-            if (!name.trim()) {
-                statusEl.textContent = "⚠️ Du måste skriva in ditt namn.";
-                return;
-            }
+        const apiUrl = "https://checkin-system-fcg0.onrender.com";
 
-            if (!navigator.geolocation) {
-                statusEl.textContent = "❌ Din webbläsare stödjer inte platstjänster.";
-                return;
-            }
-
-            statusEl.textContent = "📍 Hämtar platsinformation...";
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const data = {
-                        name: name.trim(),
-                        type: type,
-                        lat: position.coords.latitude,
-                        lon: position.coords.longitude
-                    };
-
-                    fetch("http://localhost:5000/log", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(data)
-                    })
-                    .then(response => response.json())
-                    .then(result => {
-                        statusEl.textContent = result.message;
-                    })
-                    .catch(error => {
-                        statusEl.textContent = "❌ Ett fel uppstod vid kommunikation med servern.";
-                    });
+        function sendRequest(type) {
+            const name = document.getElementById("nameInput").value;
+            fetch(`${apiUrl}/${type}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
                 },
-                () => {
-                    statusEl.textContent = "⚠️ Du måste tillåta platsåtkomst för att kunna checka in eller ut.";
-                }
-            );
+                body: JSON.stringify({ name })
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("result").innerHTML = "✅ " + data.message;
+            })
+            .catch(err => {
+                document.getElementById("result").innerHTML = "❌ Ett fel uppstod vid kommunikation med servern.";
+            });
         }
-    </script>
 
+        function checkIn() { sendRequest("checkin"); }
+        function checkOut() { sendRequest("checkout"); }
+    </script>
 </body>
 </html>

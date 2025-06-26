@@ -4,33 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <title>Adminpanel - Städfirma RVL RASA AB</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f0f0f0; }
-        .header { font-size: 22px; font-weight: bold; }
-    </style>
 </head>
 <body>
-    <div class="header">📋 Adminpanel – Alla in/ut-checkningar</div>
-    <label for="date">Välj datum:</label>
-    <input type="date" id="date" />
-    <button onclick="fetchLogs()">Hämta loggar</button>
-    <table id="logTable">
-        <thead>
-            <tr>
-                <th>Typ</th>
-                <th>Namn</th>
-                <th>Tidpunkt</th>
-                <th>Latitud</th>
-                <th>Longitud</th>
-                <th>Total tid</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+    <h1>Adminpanel</h1>
+    <button onclick="load()">🔄 Uppdatera lista</button>
+    <ul id="list"></ul>
 
-<script src="admin.js"></script>
+    <script>
+        const apiUrl = "https://checkin-system-fcg0.onrender.com";
+
+        function load() {
+            fetch(`${apiUrl}/list`)
+            .then(res => res.json())
+            .then(data => {
+                const ul = document.getElementById("list");
+                ul.innerHTML = "";
+                data.forEach(item => {
+                    const li = document.createElement("li");
+                    li.textContent = item;
+                    ul.appendChild(li);
+                });
+            })
+            .catch(() => {
+                document.getElementById("list").innerHTML = "<li>❌ Kunde inte hämta data</li>";
+            });
+        }
+    </script>
 </body>
 </html>
