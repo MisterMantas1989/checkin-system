@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Städfirma RVL RASA AB - In/Utcheckning</title>
+</head>
+<body style="font-family: sans-serif; text-align: center; padding: 20px;">
+
+    <h2>Städfirma RVL RASA AB</h2>
+    <p>Ange ditt namn och välj om du vill checka in eller checka ut.</p>
+
+    <input type="text" id="nameInput" placeholder="Ditt namn" style="padding: 10px; width: 80%; max-width: 300px;" />
+    <br><br>
+
+    <button onclick="submitData('in')" style="padding: 10px 20px;">✅ Checka in</button>
+    <button onclick="submitData('out')" style="padding: 10px 20px;">❌ Checka ut</button>
+
+    <p id="statusMessage" style="margin-top: 20px; font-weight: bold;"></p>
+
+    <script>
+        function submitData(type) {
+            const name = document.getElementById('nameInput').value;
+            const statusEl = document.getElementById('statusMessage');
+            if (!name.trim()) {
+                statusEl.textContent = "⚠️ Du måste skriva in ditt namn.";
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                statusEl.textContent = "❌ Din webbläsare stödjer inte platstjänster.";
+                return;
+            }
+
+            statusEl.textContent = "📍 Hämtar platsinformation...";
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const data = {
+                        name: name.trim(),
+                        type: type,
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+
+                    fetch("https://checkin-system-1.onrender.com/log", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data)
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        statusEl.textContent = result.message;
+                    })
+                    .catch(error => {
+                        statusEl.textContent = "❌ Ett fel uppstod vid kommunikation med servern.";
+                    });
+                },
+                () => {
+                    statusEl.textContent = "⚠️ Du måste tillåta platsåtkomst för att kunna checka in eller ut.";
+                }
+            );
+        }
+    </script>
+
+</body>
+</html>
