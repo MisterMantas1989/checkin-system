@@ -92,6 +92,7 @@ def checkin():
         in_time = now.strftime('%H:%M:%S')
         address = get_street_address(lat, lon)
 
+        # Spara till Excel som förut
         df = pd.read_excel(XLSX_FILE, engine='openpyxl')
         df['Mobil'] = df['Mobil'].astype(str).str.zfill(10)
         mask = (df['Namn'].str.strip() == namn) & (df['Mobil'] == mobil) & (df['Checkout-datum'].isna() | (df['Checkout-datum'] == ''))
@@ -113,6 +114,21 @@ def checkin():
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         df.to_excel(XLSX_FILE, index=False, engine='openpyxl')
         autosize_columns()
+        
+        # --------- NYTT: Lägg in i SQLite-databasen ----------
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(__file__), 'chat.db')
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO checkins 
+            (user, checkin_time, checkin_address, checkout_time, checkout_address, work_time_minutes)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (namn, f"{in_date} {in_time}", address, None, None, None))
+        conn.commit()
+        conn.close()
+        # ------------------------------------------------------
+
         return render_template('done.html',
             message=f'Du är nu incheckad. Välkommen {namn}!',
             namn=namn, mobil=mobil, show_checkout=True)
@@ -159,9 +175,31 @@ def checkout():
 
         df.to_excel(XLSX_FILE, index=False, engine='openpyxl')
         autosize_columns()
+
+        # -------- NYTT: Uppdatera SQLite-databas --------
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(__file__), 'chat.db')
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, checkin_time FROM checkins 
+            WHERE user=? AND (checkout_time IS NULL OR checkout_time = '') AND checkin_time IS NOT NULL
+            ORDER BY checkin_time DESC LIMIT 1
+        """, (namn,))
+        row = cur.fetchone()
+        if row:
+            checkin_id = row[0]
+            cur.execute("""
+                UPDATE checkins
+                SET checkout_time=?, checkout_address=?, work_time_minutes=?
+                WHERE id=?
+            """, (f"{out_date} {out_time}", address, total_minutes, checkin_id))
+            conn.commit()
+        conn.close()
+        # -----------------------------------------------
+
         return render_template('done.html', message=f'Tack för idag, {namn}!')
     return render_template('checkout.html', namn=namn, mobil=mobil)
-
 @app.route('/schema')
 def visa_schema():
     schema_path = os.path.join(os.path.dirname(__file__), 'schema.xlsx')
@@ -365,26 +403,35 @@ def chat():
         session['username'] = 'Admin'
 
     if request.method == 'POST':
-        user = session.get('username', 'Mantas')
+        user = session.get('username', 'Admin')
         msg = request.form.get('message', '').strip()
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if msg:
-            db.execute('INSERT INTO messages (user, message) VALUES (?, ?)', (user, msg))
+            db.execute(
+                'INSERT INTO messages (user, message, timestamp) VALUES (?, ?, ?)',
+                (user, msg, timestamp)
+            )
             db.commit()
     messages = db.execute('SELECT * FROM messages ORDER BY timestamp DESC').fetchall()
     return render_template('admin_chat.html', messages=messages)
 @app.route('/chat2', methods=['GET', 'POST'])
 def employee_chat():
     db = get_db()
+    if 'username' not in session:
+        session['username'] = 'Anonym'
+    user = session.get('username', 'Anonym')
+
     if request.method == 'POST':
-        message = request.form['message']
-        user = session.get('username', 'Anonym')
+        message = request.form.get('message', '').strip()
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        # Byt till tabellen 'messages' istället för 'chat'
-        db.execute("INSERT INTO messages (user, message, timestamp) VALUES (?, ?, ?)", (user, message, timestamp))
-        db.commit()
+        if message:
+            db.execute(
+                "INSERT INTO messages (user, message, timestamp) VALUES (?, ?, ?)",
+                (user, message, timestamp)
+            )
+            db.commit()
         return redirect(url_for('employee_chat'))
 
-    # Hämta från 'messages', inte 'chat'
     messages = db.execute("SELECT * FROM messages ORDER BY timestamp DESC").fetchall()
     return render_template('chat.html', messages=messages)
 
