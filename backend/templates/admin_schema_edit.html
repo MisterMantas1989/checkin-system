@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Redigera schemarad</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body style="background-color:#e3f4fb;">
+    <div style="max-width:500px;margin:50px auto;padding:30px;">
+        <h2>Redigera schemarad</h2>
+        <form method="POST">
+            {% for col in columns %}
+                <label>{{ col }}:</label>
+                <input type="text" name="{{ col }}" value="{{ row[col] }}"><br><br>
+            {% endfor %}
+            <button class="btn" type="submit">Spara ändringar</button>
+        </form>
+        <br>
+        <a href="{{ url_for('admin_schema') }}">Tillbaka</a>
+    </div>
+</body>
+</html>

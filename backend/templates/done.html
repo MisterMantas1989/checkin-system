@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Meddelande</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="main-container">
+        <!-- SIDOMENY -->
+        <div class="sidebar">
+            <div class="sidebar-logo-box">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            </div>
+            <div class="menu">
+                <!-- Lägg gärna till fler länkar om du vill -->
+            </div>
+        </div>
+        <!-- HUVUDINNEHÅLL -->
+        <div class="main-content">
+            <img src="{{ url_for('static', filename='logo.png') }}" class="logo-large" alt="Logo">
+            <h2 class="page-title">Status</h2>
+            <div class="status-message">{{ message }}</div>
+            {% if namn and mobil and show_checkout %}
+            <form method="POST" action="{{ url_for('checkout', namn=namn, mobil=mobil) }}">
+                <input type="hidden" name="lat" id="lat">
+                <input type="hidden" name="lon" id="lon">
+                <button type="submit" class="btn-main">Checka ut med adress</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        // Hämta GPS om checkout-knappen finns
+        if (document.getElementById('lat')) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                document.getElementById('lat').value = pos.coords.latitude;
+                document.getElementById('lon').value = pos.coords.longitude;
+            }, function(err){
+                alert('Kunde inte hämta GPS-position!');
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
