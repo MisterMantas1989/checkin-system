@@ -1,34 +1,119 @@
-
 <!DOCTYPE html>
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
     <title>Adminpanel - Städfirma RVL RASA AB</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: #f7fbfd;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            background: #007bc1;
+            width: 220px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+        }
+        .sidebar-logo-box img {
+            width: 150px;
+            margin-bottom: 30px;
+        }
+        .main-content {
+            flex: 1;
+            padding: 40px 5vw 40px 5vw;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px #0001;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #d7e7f5;
+            padding: 7px 10px;
+            text-align: left;
+        }
+        th {
+            background: #eef7fb;
+        }
+        h1, h2 {
+            color: #007bc1;
+        }
+        @media (max-width: 700px) {
+            .main-content {
+                padding: 20px 1vw 20px 1vw;
+            }
+            table {
+                font-size: 0.9rem;
+            }
+            th, td {
+                padding: 4px 4px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Adminpanel</h1>
-    <button onclick="load()">🔄 Uppdatera lista</button>
-    <ul id="list"></ul>
-
-    <script>
-        const apiUrl = "https://checkin-system-fcg0.onrender.com";
-
-        function load() {
-            fetch(`${apiUrl}/list`)
-            .then(res => res.json())
-            .then(data => {
-                const ul = document.getElementById("list");
-                ul.innerHTML = "";
-                data.forEach(item => {
-                    const li = document.createElement("li");
-                    li.textContent = item;
-                    ul.appendChild(li);
-                });
-            })
-            .catch(() => {
-                document.getElementById("list").innerHTML = "<li>❌ Kunde inte hämta data</li>";
-            });
-        }
-    </script>
+    <div class="main-container">
+        <!-- SIDOMENY -->
+        <div class="sidebar">
+            <div class="sidebar-logo-box">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            </div>
+            <div class="menu">
+                <a href="{{ url_for('home') }}" style="color:#fff;">Hem</a>
+                <a href="{{ url_for('history') }}" style="color:#fff;">Min historik</a>
+            </div>
+        </div>
+        <!-- HUVUDINNEHÅLL -->
+        <div class="main-content">
+            <h1>Adminpanel</h1>
+            <p>Här visas samtliga loggar för Städfirma RVL RASA AB:</p>
+            {% if entries and entries|length > 0 %}
+            <table>
+                <tr>
+                    <th>Namn</th>
+                    <th>Mobil</th>
+                    <th>Checkin-datum</th>
+                    <th>Checkin-tid</th>
+                    <th>In-adress</th>
+                    <th>Checkout-datum</th>
+                    <th>Checkout-tid</th>
+                    <th>Ut-adress</th>
+                    <th>Totaltid (min)</th>
+                </tr>
+                {% for e in entries %}
+                <tr>
+                    <td>{{ e['Namn'] }}</td>
+                    <td>{{ e['Mobil'] }}</td>
+                    <td>{{ e['Checkin-datum'] }}</td>
+                    <td>{{ e['Checkin-tid'] }}</td>
+                    <td>{{ e['Checkin-adress'] }}</td>
+                    <td>{{ e['Checkout-datum'] }}</td>
+                    <td>{{ e['Checkout-tid'] }}</td>
+                    <td>{{ e['Checkout-adress'] }}</td>
+                    <td>{{ e['Total tid (minuter)'] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <p>Ingen historik hittades.</p>
+            {% endif %}
+            <br>
+            <a href="{{ url_for('home') }}" style="color:#007bc1;">⬅ Tillbaka till startsidan</a>
+        </div>
+    </div>
 </body>
 </html>
