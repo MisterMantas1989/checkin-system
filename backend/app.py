@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 from geopy.geocoders import Nominatim
 from openpyxl import load_workbook
-from fix_db import init_messages_table, save_message, get_messages
+from backend.fix_db import init_messages_table, save_message, get_messages
 import os
 
 def init_checkins_table():
