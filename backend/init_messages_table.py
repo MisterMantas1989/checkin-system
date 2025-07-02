@@ -1,6 +1,10 @@
 import sqlite3
-conn = sqlite3.connect("chat.db")  # eller var din databas ligger!
+
+# Anslut till SQLite-databasen (skapar filen om den inte finns)
+conn = sqlite3.connect("chat.db")  # Ange rätt sökväg om nödvändigt
 cur = conn.cursor()
+
+# Skapa tabellen 'messages' om den inte redan finns
 cur.execute("""
     CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -12,3 +16,4 @@ cur.execute("""
 conn.commit()
 conn.close()
 print("Tabellen 'messages' skapad!")
+

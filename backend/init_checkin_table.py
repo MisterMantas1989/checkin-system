@@ -1,9 +1,10 @@
 import sqlite3
 from datetime import datetime
 
-DB_PATH = "chat.db"  # Ändra till din db-fil om du har annan väg
+DB_PATH = "chat.db"
 
 def create_table():
+    """Skapa tabellen för in/utcheckning."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
@@ -22,6 +23,7 @@ def create_table():
     print("Tabell 'checkins' skapad!")
 
 def check_in(user, address):
+    """Logga en incheckning för given användare och adress."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -34,10 +36,11 @@ def check_in(user, address):
     print(f"{user} checkade in {now} på adress: {address}")
 
 def check_out(user, address):
+    """Logga en utcheckning för given användare och adress."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    # Hitta senaste checkin utan utcheckning
+    # Hämta senaste checkin utan utcheckning
     c.execute("""
         SELECT id, checkin_time FROM checkins
         WHERE user = ? AND checkout_time IS NULL
@@ -49,7 +52,6 @@ def check_out(user, address):
         checkin_time_obj = datetime.strptime(checkin_time, "%Y-%m-%d %H:%M:%S")
         checkout_time_obj = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
         work_time = int((checkout_time_obj - checkin_time_obj).total_seconds() // 60)
-        # Uppdatera raden med utcheckning
         c.execute("""
             UPDATE checkins
             SET checkout_time = ?, checkout_address = ?, work_time_minutes = ?
@@ -62,6 +64,7 @@ def check_out(user, address):
     conn.close()
 
 def total_worked_minutes(user):
+    """Summera totalt arbetad tid i minuter för given användare."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
@@ -72,10 +75,10 @@ def total_worked_minutes(user):
     conn.close()
     return total or 0
 
-# Testkörning (ta bort om du bara vill importera funktionerna)
+# Testkörning
 if __name__ == "__main__":
     create_table()
-    # Exempel (ta bort eller ändra till riktiga data):
     # check_in("Anna", "Sveavägen 1, Stockholm")
     # check_out("Anna", "Kungsgatan 2, Stockholm")
     # print("Totalt jobbat:", total_worked_minutes("Anna"), "minuter")
+

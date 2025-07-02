@@ -1,34 +1,40 @@
-
 <!DOCTYPE html>
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <title>Check-in/ut-logg</title>
+    <title>Admin – Excel-logg</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        table { border-collapse: collapse; width: 95%; margin: 20px auto; }
-        th, td { border: 1px solid #888; padding: 8px; text-align: left; }
-        th { background: #d9edf7; }
-        tr:nth-child(even) { background: #f7f7f7; }
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 40px;}
+        table { border-collapse: collapse; width: 100%; background: white;}
+        th, td { padding: 10px; border: 1px solid #ccc; text-align: center;}
+        th { background: #1a698c; color: white; }
+        tr:nth-child(even) { background: #e7f2fa; }
     </style>
 </head>
 <body>
-    <div style="width: 80%; margin: 30px auto;">
-        <h2>Check-in / Check-out Logg</h2>
-        <table>
+    <h1>Admin – In/Ut Excel-logg</h1>
+    {% if records %}
+    <table>
+        <thead>
             <tr>
-                {% for col in columns %}
-                    <th>{{ col }}</th>
-                {% endfor %}
-            </tr>
-            {% for rad in records %}
-                <tr>
-                    {% for col in columns %}
-                        <td>{{ rad[col] }}</td>
-                    {% endfor %}
-                </tr>
+            {% for col in columns %}
+                <th>{{ col }}</th>
             {% endfor %}
-        </table>
-        <a href="{{ url_for('admin_panel') }}">Tillbaka till adminpanel</a>
-    </div>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in records %}
+            <tr>
+            {% for col in columns %}
+                <td>{{ r[col] }}</td>
+            {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Ingen logg hittades i Excel-filen.</p>
+    {% endif %}
 </body>
 </html>

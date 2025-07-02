@@ -27,6 +27,12 @@
                 min-width: 100px; max-width: 120px;
             }
         }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -46,10 +52,11 @@
                 </tr>
             {% endfor %}
         </table>
-        <a href="/">Tillbaka till inloggning</a>
+        <a href="{{ url_for('checkin') }}" class="back-link">⬅️ Tillbaka till Check-in sidan</a>
     </div>
 </body>
 </html>
+
 
 
 

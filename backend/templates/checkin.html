@@ -4,6 +4,34 @@
     <meta charset="UTF-8">
     <title>Checka in</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #mapid {
+            height: 120px;
+            width: 95%;
+            max-width: 950px;
+            margin: 12px auto 12px auto;
+            border-radius: 10px;
+            border: 1px solid #b3e0ff;
+            display: block;
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .btn-main {
+            width: 260px;
+            font-size: 1.1em;
+            margin-top: 12px;
+        }
+        .status-message {
+            margin: 12px 0 0 0;
+            font-size: 18px;
+            color: #0a6699;
+        }
+    </style>
 </head>
 <body>
     <div class="main-container">
@@ -12,36 +40,65 @@
             <div class="sidebar-logo-box">
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
             </div>
-            <!-- Ingen meny eller knapp här! -->
+            <div class="menu">
+                {% if session.get('username') %}
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="{{ url_for('employee_chat') }}" class="sidebar-link">🗨️ Chatt</a></li>
+                    <li><a href="{{ url_for('visa_schema') }}" class="sidebar-link">📅 Visa schema</a></li>
+                    <li><a href="{{ url_for('history') }}" class="sidebar-link">📜 Historik</a></li>
+                    <li><a href="{{ url_for('logout') }}" class="sidebar-link">🚪 Logga ut</a></li>
+                </ul>
+                {% endif %}
+            </div>
         </div>
         <!-- HUVUDINNEHÅLL -->
         <div class="main-content">
             <img src="{{ url_for('static', filename='logo.png') }}" class="logo-large" alt="Logo">
             <h2 class="page-title">Checka in</h2>
-            <form method="POST" action="{{ url_for('checkin', namn=namn, mobil=mobil) }}">
+            <div class="status-message">
+                {{ message if message else "Vänligen checka in med adress och position." }}
+            </div>
+            
+            <div id="mapid"></div>
+            <form method="POST" action="{{ url_for('checkin') }}">
                 <input type="hidden" name="lat" id="lat">
                 <input type="hidden" name="lon" id="lon">
                 <button type="submit" class="btn-main">Checka in med adress</button>
             </form>
-            <form action="{{ url_for('visa_schema') }}" method="get" style="margin-top: 15px;">
-                <button type="submit" class="btn-main">Visa schema</button>
-            </form>
-           <form action="{{ url_for('employee_chat') }}" method="get" style="margin-top: 15px;">
-    <button type="submit" class="btn-main">Chatt</button>
-</form>
-            </form>
         </div>
     </div>
     <script>
+        // Visa karta och hämta GPS automatiskt
         navigator.geolocation.getCurrentPosition(function(pos) {
-            document.getElementById('lat').value = pos.coords.latitude;
-            document.getElementById('lon').value = pos.coords.longitude;
+            var lat = pos.coords.latitude;
+            var lon = pos.coords.longitude;
+            document.getElementById('lat').value = lat;
+            document.getElementById('lon').value = lon;
+
+            var mapDiv = document.getElementById('mapid');
+            mapDiv.style.display = 'block';
+            var map = L.map('mapid').setView([lat, lon], 15);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            L.marker([lat, lon]).addTo(map)
+                .bindPopup("Din position").openPopup();
         }, function(err){
-            alert('Kunde inte hämta GPS-position!');
+            document.getElementById('mapid').style.display = 'none';
         });
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
 
 
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Checka ut</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
     <div class="main-container">
@@ -13,28 +14,44 @@
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
             </div>
             <div class="menu">
-                <!-- Bara tillbaka till startsidan/utlogg om du vill -->
+                <!-- Här kan du lägga till fler länkar -->
             </div>
         </div>
         <!-- HUVUDINNEHÅLL -->
         <div class="main-content">
             <img src="{{ url_for('static', filename='logo.png') }}" class="logo-large" alt="Logo">
             <h2 class="page-title">Checka ut</h2>
-            <form method="POST" action="{{ url_for('checkout', namn=namn, mobil=mobil) }}">
+            <div id="mapid" style="height: 300px; width: 100%; margin-bottom: 15px; display:none;"></div>
+            <form method="POST">
                 <input type="hidden" name="lat" id="lat">
                 <input type="hidden" name="lon" id="lon">
                 <button type="submit" class="btn-main">Checka ut med adress</button>
             </form>
         </div>
     </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Hämta GPS-position direkt när sidan laddas
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            document.getElementById('lat').value = pos.coords.latitude;
-            document.getElementById('lon').value = pos.coords.longitude;
-        }, function(err){
-            alert('Kunde inte hämta GPS-position! Kontrollera platsbehörighet.');
-        });
+        if (document.getElementById('lat')) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                var lat = pos.coords.latitude;
+                var lon = pos.coords.longitude;
+                document.getElementById('lat').value = lat;
+                document.getElementById('lon').value = lon;
+
+                var mapDiv = document.getElementById('mapid');
+                mapDiv.style.display = 'block';
+                var map = L.map('mapid').setView([lat, lon], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+
+                L.marker([lat, lon]).addTo(map)
+                    .bindPopup("Din position").openPopup();
+            }, function(err){
+                alert('Kunde inte hämta GPS-position! Kontrollera platsbehörighet.');
+            });
+        }
     </script>
 </body>
 </html>
