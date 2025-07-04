@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from datetime import datetime
-from models import db, Message
+from .models import db, Message
 
 chat_bp = Blueprint('chat', __name__)
 
