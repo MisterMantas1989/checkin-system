@@ -7,7 +7,8 @@ import os
 from openpyxl import load_workbook
 
 checkin_bp = Blueprint('checkin', __name__)
-XLSX_FILE = 'checkin_data.xlsx'
+BASE_DIR = os.path.dirname(__file__)
+XLSX_FILE = os.path.join(BASE_DIR, 'checkin_data.xlsx')
 
 def get_street_address(lat, lon):
     try:
