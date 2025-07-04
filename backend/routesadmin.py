@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, send_file
-from models import db, Checkin, Schema  # OBS: Schema-modell måste finnas!
+from .models import db, Checkin, Schema  # OBS: Schema-modell måste finnas!
 import pandas as pd
 from io import BytesIO
 
