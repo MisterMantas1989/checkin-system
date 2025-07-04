@@ -17,10 +17,10 @@
             <div class="menu">
                 {% if session.get('username') %}
                 <ul style="list-style: none; padding: 0;">
-                    <li><a href="{{ url_for('employee_chat') }}" class="sidebar-link">🗨️ Chatt</a></li>
-                    <li><a href="{{ url_for('visa_schema') }}" class="sidebar-link">📅 Visa schema</a></li>
-                    <li><a href="{{ url_for('history') }}" class="sidebar-link">📜 Historik</a></li>
-                    <li><a href="{{ url_for('logout') }}" class="sidebar-link">🚪 Logga ut</a></li>
+                    <li><a href="{{ url_for('chat.employee_chat') }}" class="sidebar-link">🗨️ Chatt</a></li>
+                    <li><a href="{{ url_for('history.schema') }}" class="sidebar-link">📅 Visa schema</a></li>
+                    <li><a href="{{ url_for('history.history') }}" class="sidebar-link">📜 Historik</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}" class="sidebar-link">🚪 Logga ut</a></li>
                 </ul>
                 {% endif %}
             </div>
@@ -35,7 +35,7 @@
             <div id="mapid" style="height: 300px; width: 100%; margin: 20px 0; display:none;"></div>
 
             {% if show_checkout %}
-            <form method="POST" action="{{ url_for('checkout') }}">
+            <form method="POST" action="{{ url_for('checkin.checkout') }}">
                 <input type="hidden" name="lat" id="lat">
                 <input type="hidden" name="lon" id="lon">
                 <button type="submit" class="btn-main">Checka ut med adress</button>
@@ -70,6 +70,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 

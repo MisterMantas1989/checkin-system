@@ -67,16 +67,16 @@
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
         </div>
         <div class="menu">
-            <a href="{{ url_for('admin_panel') }}">Instrumentpanel</a>
-            <a href="{{ url_for('admin_schema') }}" class="active">Schema</a>
-            <a href="{{ url_for('admin_schema_add') }}">Add schema</a>
-            <a href="{{ url_for('admin_logg') }}">Logg</a>
-            <a href="{{ url_for('admin_logout') }}">Logga ut</a>
+            <a href="{{ url_for('admin.admin_panel') }}">Instrumentpanel</a>
+            <a href="{{ url_for('admin.admin_schema') }}" class="active">Schema</a>
+            <a href="{{ url_for('admin.admin_schema_add') }}">Add schema</a>
+            <a href="{{ url_for('admin.admin_logg') }}">Logg</a>
+            <a href="{{ url_for('admin.admin_logout') }}">Logga ut</a>
         </div>
     </div>
     <div class="main-content" style="align-items: flex-start;">
         <h2 style="margin-bottom:0; margin-top:10px;">Alla scheman</h2>
-        <input type="text" id="filter-input" placeholder="Filtrera på namn, datum, plats..." style="margin: 16px 0 14px 0; width: 330px; max-width:95%;">
+        <input type="text" id="filter-input" placeholder="Filtrera på namn, datum, adress..." style="margin: 16px 0 14px 0; width: 330px; max-width:95%;">
         <table class="table-schema" id="schema-table">
             <thead>
             <tr>
@@ -97,8 +97,9 @@
                     {% endif %}
                 {% endfor %}
                 <td>
-                    <a href="{{ url_for('admin_schema_edit', row_id=rad['row_id']) }}" class="btn-action btn-edit">Redigera</a>
-                    <form method="POST" action="{{ url_for('admin_schema_delete', row_id=rad['row_id']) }}" style="display:inline;">
+                    <!-- FIXAT: row_id → id -->
+                    <a href="{{ url_for('admin.admin_schema_edit', row_id=rad['id']) }}" class="btn-action btn-edit">Redigera</a>
+                    <form method="POST" action="{{ url_for('admin.admin_schema_delete', row_id=rad['id']) }}" style="display:inline;">
                         <button type="submit" class="btn-action btn-delete" onclick="return confirm('Vill du ta bort raden?')">Ta bort</button>
                     </form>
                 </td>
@@ -106,12 +107,11 @@
             {% endfor %}
             </tbody>
         </table>
-        <a href="{{ url_for('admin_panel') }}" style="margin-top:20px; display:inline-block;">Tillbaka till adminpanelen</a>
+        <a href="{{ url_for('admin.admin_panel') }}" style="margin-top:20px; display:inline-block;">Tillbaka till adminpanelen</a>
     </div>
 </div>
 
 <script>
-    // Enkel filtrering på namn/datum/plats
     document.getElementById('filter-input').addEventListener('input', function() {
         let value = this.value.toLowerCase();
         let rows = document.querySelectorAll('#schema-table tbody tr');
@@ -126,5 +126,8 @@
 </script>
 </body>
 </html>
+
+
+
 
 

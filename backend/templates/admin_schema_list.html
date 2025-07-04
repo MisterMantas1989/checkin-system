@@ -30,8 +30,8 @@
                         <td>{{ rad[col] }}</td>
                     {% endfor %}
                     <td>
-                        <a href="{{ url_for('admin_schema_edit', row_id=rad['row_id']) }}">Redigera</a>
-                        <form method="POST" action="{{ url_for('admin_schema_delete', row_id=rad['row_id']) }}" style="display:inline;">
+                        <a href="{{ url_for('admin.admin_schema_edit', row_id=rad['row_id']) }}">Redigera</a>
+                        <form method="POST" action="{{ url_for('admin.admin_schema_delete', row_id=rad['row_id']) }}" style="display:inline;">
                             <button type="submit" onclick="return confirm('Vill du ta bort raden?')">Ta bort</button>
                         </form>
                     </td>
@@ -40,6 +40,8 @@
         </tbody>
     </table>
     <br>
-    <a href="{{ url_for('admin_panel') }}">Tillbaka till adminpanelen</a>
+    <a href="{{ url_for('admin.admin_panel') }}">Tillbaka till adminpanelen</a>
 </body>
 </html>
+
+

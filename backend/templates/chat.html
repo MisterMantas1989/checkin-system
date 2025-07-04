@@ -116,8 +116,8 @@
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
         </div>
         <div class="menu">
-            <a href="{{ url_for('employee_chat') }}" class="active">Chatt</a>
-            <a href="{{ url_for('checkin') }}" class="btn-main">Tillbaka till checkin</a>
+            <a href="{{ url_for('chat.employee_chat') }}" class="active">Chatt</a>
+            <a href="{{ url_for('checkin.checkin') }}" class="btn-main">Tillbaka till checkin</a>
         </div>
     </div>
     <div class="main-content">
@@ -138,6 +138,8 @@
 </div>
 </body>
 </html>
+
+
 
 
 

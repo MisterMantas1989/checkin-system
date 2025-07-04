@@ -38,7 +38,9 @@
             font-weight: 500;
             font-size: 0.99rem;
         }
-        select, input[type="date"], input[type="time"], input[type="text"] {
+        input[type="date"],
+        input[type="time"],
+        input[type="text"] {
             width: 100%;
             padding: 8px 9px;
             margin-bottom: 3px;
@@ -49,7 +51,7 @@
             transition: border 0.18s;
             box-sizing: border-box;
         }
-        select:focus, input:focus {
+        input:focus {
             border: 1.5px solid #00b7e5;
             outline: none;
         }
@@ -104,27 +106,33 @@
         {% endif %}
         <form method="POST" autocomplete="off" style="width:100%;">
             <label>Anställd:</label>
-            <select name="namn" required>
-                {% for namn in anstallda %}
-                    <option>{{ namn }}</option>
-                {% endfor %}
-            </select>
+            <input type="text" name="namn" placeholder="Skriv anställds namn" required>
+
             <label>Datum:</label>
             <input type="date" name="datum" required>
+
             <label>Starttid:</label>
             <input type="time" name="starttid" required>
+
             <label>Sluttid:</label>
             <input type="time" name="sluttid" required>
-            <label>Plats:</label>
-            <input type="text" name="plats" placeholder="Ange plats" required>
+
+            <!-- Ändrat: Plats -> Adress -->
+            <label>Adress:</label>
+            <input type="text" name="adress" placeholder="Ange adress" required>
+
             <label>Kommentar:</label>
             <input type="text" name="kommentar" placeholder="Valfritt">
+
             <button class="btn-main" type="submit">Spara schemarad</button>
         </form>
-        <a class="back-link" href="{{ url_for('admin_schema') }}">Tillbaka till alla scheman</a>
+        <a class="back-link" href="{{ url_for('admin.admin_schema') }}">Tillbaka till alla scheman</a>
     </div>
 </body>
 </html>
+
+
+
 
 
 

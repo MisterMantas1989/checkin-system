@@ -20,15 +20,19 @@
         <div class="main-content">
             <img src="{{ url_for('static', filename='logo.png') }}" class="logo-large" alt="Logo">
             <h2 class="page-title">Logga in</h2>
-            <form method="post" action="{{ url_for('login') }}">
+            <form method="post" action="{{ url_for('auth.login') }}">
                 <input type="text" name="namn" placeholder="För- och efternamn" required>
                 <input type="text" name="mobil" placeholder="Mobilnummer" required>
                 <button type="submit" class="btn-main">Logga in</button>
             </form>
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% endif %}
         </div>
     </div>
 </body>
 </html>
+
 
 
 

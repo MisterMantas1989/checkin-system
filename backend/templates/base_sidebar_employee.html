@@ -3,10 +3,15 @@
         <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
     </div>
     <div class="menu">
-        <a href="{{ url_for('visa_schema') }}">Visa schema</a>
-        <a href="{{ url_for('chat') }}">Chatt</a>
-        <a href="{{ url_for('logout') }}">Logga ut</a>
+        <a href="{{ url_for('history.schema') }}">Visa schema</a>
+        <a href="{{ url_for('history.history') }}">Historik</a>
+        <a href="{{ url_for('chat.employee_chat') }}">Chatt</a>
+        <a href="{{ url_for('auth.logout') }}">Logga ut</a>
     </div>
 </div>
+
+
+
+
 
 

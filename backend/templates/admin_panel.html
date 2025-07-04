@@ -103,15 +103,13 @@
         <div class="sidebar">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Firmalogo">
             <div class="menu">
-                <a href="{{ url_for('admin_panel') }}" class="{% if request.endpoint == 'admin_panel' %}active{% endif %}">Instrumentpanel</a>
-                <a href="{{ url_for('admin_schema') }}" class="{% if request.endpoint == 'admin_schema' %}active{% endif %}">Schema</a>
-                <a href="{{ url_for('admin_schema_add') }}" class="{% if request.endpoint == 'admin_schema_add' %}active{% endif %}">Add schema</a>
-                <a href="{{ url_for('admin_logg') }}" class="{% if request.endpoint == 'admin_logg' %}active{% endif %}">Logg</a>
-
-                <!-- ✅ Ny knapp för chatt -->
-                <a href="{{ url_for('chat') }}" class="{% if request.endpoint == 'chat' %}active{% endif %}">Chat</a>
-
-                <a href="{{ url_for('admin_logout') }}">Logga ut</a>
+                <a href="{{ url_for('admin.admin_panel') }}" class="{% if request.endpoint == 'admin.admin_panel' %}active{% endif %}">Instrumentpanel</a>
+                <a href="{{ url_for('admin.admin_schema') }}" class="{% if request.endpoint == 'admin.admin_schema' %}active{% endif %}">Schema</a>
+                <a href="{{ url_for('admin.admin_schema_add') }}" class="{% if request.endpoint == 'admin.admin_schema_add' %}active{% endif %}">Add schema</a>
+                <a href="{{ url_for('admin.admin_logg') }}" class="{% if request.endpoint == 'admin.admin_logg' %}active{% endif %}">Logg</a>
+                <!-- Nu rättad chat-länk -->
+                <a href="{{ url_for('chat.chat') }}" class="{% if request.endpoint == 'chat.chat' %}active{% endif %}">Chat</a>
+                <a href="{{ url_for('admin.admin_logout') }}">Logga ut</a>
             </div>
         </div>
         <div class="main-content">
@@ -126,6 +124,8 @@
     </div>
 </body>
 </html>
+
+
 
 
 
