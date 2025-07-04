@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for
 from datetime import datetime
-from models import db, Checkin
+from .models import db, Checkin
 from geopy.geocoders import Nominatim
 import pandas as pd
 import os
