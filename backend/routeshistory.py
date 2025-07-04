@@ -1,6 +1,6 @@
 from flask import Blueprint, session, render_template, redirect, url_for
 import pandas as pd
-from models import Schema, Checkin
+from .models import Schema, Checkin
 import os
 
 history_bp = Blueprint('history', __name__)
