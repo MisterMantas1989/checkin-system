@@ -1,12 +1,12 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from .config import SQLALCHEMY_DATABASE_URI
-from models import db
-from routesauth import auth_bp
-from routescheckin import checkin_bp
-from routeshistory import history_bp
-from routesadmin import admin_bp
-from routeschat import chat_bp
+from .models import db
+from .routesauth import auth_bp
+from .routescheckin import checkin_bp
+from .routeshistory import history_bp
+from .routesadmin import admin_bp
+from .routeschat import chat_bp
 
 
 app = Flask(__name__)
