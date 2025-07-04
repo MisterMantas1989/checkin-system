@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from config import SQLALCHEMY_DATABASE_URI
+from .config import SQLALCHEMY_DATABASE_URI
 from models import db
 from routesauth import auth_bp
 from routescheckin import checkin_bp
