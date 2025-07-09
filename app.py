@@ -1,8 +1,8 @@
 from flask import Flask, redirect, request
 from flask_cors import CORS
 from flask_migrate import Migrate
-from backend.config import SQLALCHEMY_DATABASE_URI
-from backend.models import db
+from config import SQLALCHEMY_DATABASE_URI
+from models import db
 
 import os
 
