@@ -11,7 +11,7 @@ from flask import (
     url_for,
 )
 from werkzeug.security import generate_password_hash
-from models import Checkin, Schema, User, db
+from backend.models import Checkin, Schema, User, db
 import requests
 
 admin_bp = Blueprint("admin", __name__)

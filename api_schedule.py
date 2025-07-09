@@ -1,5 +1,5 @@
 import requests
-from models import User
+from backend.models import User
 
 def send_push_to_all_users(title, body):
     users = User.query.filter(User.push_token.isnot(None)).all()

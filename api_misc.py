@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from models import Checkin, Schema, User, db
-from api_auth import get_user_from_token
+from backend.models import Checkin, Schema, User, db
+from backend.api_auth import get_user_from_token
 import pandas as pd
 
 api_misc_bp = Blueprint("api_misc", __name__)

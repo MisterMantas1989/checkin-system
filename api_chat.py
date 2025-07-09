@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from models import db, Message
+from backend.models import db, Message
 from datetime import datetime
-from api_auth import get_user_from_token
+from backend.api_auth import get_user_from_token
 
 api_chat_bp = Blueprint("api_chat", __name__)
 
