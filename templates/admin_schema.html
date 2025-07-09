@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Alla scheman</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .table-schema {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+        .table-schema th, .table-schema td {
+            padding: 10px 7px;
+            border: 1px solid #beeaff;
+            text-align: left;
+        }
+        .table-schema th {
+            background: #e9f7ff;
+        }
+        .table-schema tr:nth-child(even) {
+            background: #f8fcff;
+        }
+        .filter-row input {
+            padding: 4px 8px;
+            width: 90%;
+        }
+        .btn-action {
+            padding: 5px 14px;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 6px;
+            transition: background 0.15s, color 0.15s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-edit {
+            background: #e4f0ff;
+            color: #2567b2;
+            border: 1px solid #a7cfff;
+        }
+        .btn-edit:hover {
+            background: #2567b2;
+            color: #fff;
+        }
+        .btn-delete {
+            background: #ffeded;
+            color: #bb2323;
+            border: 1px solid #ffb3b3;
+        }
+        .btn-delete:hover {
+            background: #bb2323;
+            color: #fff;
+        }
+        @media (max-width: 800px) {
+            .main-content { padding: 8px; }
+            .table-schema th, .table-schema td { padding: 5px 3px; font-size: 0.92em; }
+        }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <div class="sidebar">
+        <div class="sidebar-logo-box">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+        </div>
+        <div class="menu">
+            <a href="{{ url_for('admin.admin_panel') }}">Instrumentpanel</a>
+            <a href="{{ url_for('admin.admin_schema') }}" class="active">Schema</a>
+            <a href="{{ url_for('admin.admin_schema_add') }}">Add schema</a>
+            <a href="{{ url_for('admin.admin_logg') }}">Logg</a>
+            <a href="{{ url_for('admin.admin_logout') }}">Logga ut</a>
+        </div>
+    </div>
+    <div class="main-content" style="align-items: flex-start;">
+        <h2 style="margin-bottom:0; margin-top:10px;">Alla scheman</h2>
+
+        <!-- FILTRERA DROPDOWN - START -->
+        <form method="get" style="margin-bottom: 16px;">
+            <label for="user" style="margin-right:8px;">Filtrera på användare:</label>
+            <select name="user" id="user" onchange="this.form.submit()" style="padding:5px 12px;">
+                <option value="">Alla</option>
+                {% for namn in alla_anvandare %}
+                    <option value="{{ namn }}" {% if selected_user == namn %}selected{% endif %}>{{ namn }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <!-- FILTRERA DROPDOWN - SLUT -->
+
+        <input type="text" id="filter-input" placeholder="Filtrera på namn, datum, plats..." style="margin: 16px 0 14px 0; width: 330px; max-width:95%;">
+
+        <table class="table-schema" id="schema-table">
+            <thead>
+            <tr>
+                {% for col in columns %}
+                    {% if col != 'row_id' and col != 'RadID' %}
+                        <th>{{ col }}</th>
+                    {% endif %}
+                {% endfor %}
+                <th>Åtgärder</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for rad in records %}
+            <tr>
+                {% for col in columns %}
+                    {% if col != 'row_id' and col != 'RadID' %}
+                        <td>{{ rad[col] }}</td>
+                    {% endif %}
+                {% endfor %}
+                <td>
+                    <a href="{{ url_for('admin.admin_schema_edit', row_id=rad['id']) }}" class="btn-action btn-edit">Redigera</a>
+                    <form method="POST" action="{{ url_for('admin.admin_schema_delete', row_id=rad['id']) }}" style="display:inline;">
+                        <button type="submit" class="btn-action btn-delete" onclick="return confirm('Vill du ta bort raden?')">Ta bort</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('admin.admin_panel') }}" style="margin-top:20px; display:inline-block;">Tillbaka till adminpanelen</a>
+    </div>
+</div>
+
+<script>
+    // Enkel filtrering på namn/datum/plats
+    document.getElementById('filter-input').addEventListener('input', function() {
+        let value = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#schema-table tbody tr');
+        rows.forEach(tr => {
+            let show = false;
+            tr.querySelectorAll('td').forEach(td => {
+                if (td.textContent.toLowerCase().includes(value)) show = true;
+            });
+            tr.style.display = show ? '' : 'none';
+        });
+    });
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Checka in</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #mapid {
+            height: 120px;
+            width: 95%;
+            max-width: 950px;
+            margin: 12px auto 12px auto;
+            border-radius: 10px;
+            border: 1px solid #b3e0ff;
+            display: block;
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .btn-main {
+            width: 260px;
+            font-size: 1.1em;
+            margin-top: 12px;
+        }
+        .status-message {
+            margin: 12px 0 0 0;
+            font-size: 18px;
+            color: #0a6699;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- SIDOMENY -->
+        <div class="sidebar">
+            <div class="sidebar-logo-box">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            </div>
+            <div class="menu">
+                {% if session.get('username') %}
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="{{ url_for('chat.employee_chat') }}" class="sidebar-link">🗨️ Chatt</a></li>
+                    <li><a href="{{ url_for('history.schema') }}" class="sidebar-link">📅 Visa schema</a></li>
+                    <li><a href="{{ url_for('history.history') }}" class="sidebar-link">📜 Historik</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}" class="sidebar-link">🚪 Logga ut</a></li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        <!-- HUVUDINNEHÅLL -->
+        <div class="main-content">
+            <img src="{{ url_for('static', filename='logo.png') }}" class="logo-large" alt="Logo">
+            <h2 class="page-title">Checka in</h2>
+            <div class="status-message" id="status-message">
+                Söker GPS-position...
+            </div>
+            <div id="mapid" style="display:none;"></div>
+            <form method="POST" action="{{ url_for('checkin.checkin') }}">
+                <input type="hidden" name="lat" id="lat">
+                <input type="hidden" name="lon" id="lon">
+                <button type="submit" class="btn-main" id="checkin-btn" disabled>Checka in med adress</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        // Bättre GPS: Vänta på tillräcklig noggrannhet, visa status, auto-timeout
+        let bestPosition = null;
+        let watchId = null;
+        let maxWaitTime = 12000; // 12 sekunder
+        let timerId = null;
+        let map = null;
+        const precisionLimit = 50; // meter
+        const statusElem = document.getElementById('status-message');
+        const mapDiv = document.getElementById('mapid');
+        const checkinBtn = document.getElementById('checkin-btn');
+
+        function updateStatus(msg, color="#0a6699") {
+            statusElem.innerText = msg;
+            statusElem.style.color = color;
+        }
+
+        function renderMap(lat, lon) {
+            mapDiv.style.display = 'block';
+            if (map) {
+                map.setView([lat, lon], 15);
+                return;
+            }
+            map = L.map('mapid').setView([lat, lon], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+            L.marker([lat, lon]).addTo(map)
+                .bindPopup("Din position").openPopup();
+        }
+
+        function stopAndSetBestPosition() {
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            if (timerId !== null) clearTimeout(timerId);
+            if (bestPosition) {
+                const { latitude, longitude, accuracy } = bestPosition.coords;
+                document.getElementById('lat').value = latitude;
+                document.getElementById('lon').value = longitude;
+                checkinBtn.disabled = false;
+                renderMap(latitude, longitude);
+                updateStatus(`GPS-noggrannhet: ${Math.round(accuracy)} meter${accuracy > precisionLimit ? " (observera låg precision!)" : ""}`);
+            } else {
+                updateStatus("Kunde inte hämta GPS-position.", "#c00");
+                mapDiv.style.display = 'none';
+                checkinBtn.disabled = true;
+            }
+        }
+
+        function handlePosition(pos) {
+            if (!bestPosition || pos.coords.accuracy < bestPosition.coords.accuracy) {
+                bestPosition = pos;
+            }
+            updateStatus(`Söker GPS... Nuvarande noggrannhet: ${Math.round(pos.coords.accuracy)} meter`);
+            if (pos.coords.accuracy <= precisionLimit) {
+                stopAndSetBestPosition();
+            }
+        }
+
+        if (navigator.geolocation) {
+            watchId = navigator.geolocation.watchPosition(handlePosition, function(err){
+                updateStatus("Kunde inte hitta din position. Ge tillgång till plats eller försök igen utomhus.", "#c00");
+                mapDiv.style.display = 'none';
+                checkinBtn.disabled = true;
+            }, {
+                enableHighAccuracy: true,
+                timeout: maxWaitTime,
+                maximumAge: 0
+            });
+            timerId = setTimeout(stopAndSetBestPosition, maxWaitTime);
+        } else {
+            updateStatus("Din webbläsare stödjer inte platstjänster.", "#c00");
+            checkinBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

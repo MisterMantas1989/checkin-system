@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Incheckningslogg</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f0f7fa;
+            padding: 30px;
+        }
+        h1 {
+            color: #174273;
+            margin-bottom: 20px;
+        }
+        .filter-form {
+            margin-bottom: 18px;
+        }
+        .filter-form select {
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #e1ecf4;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .btn-back {
+            display: inline-block;
+            background-color: #007B8F;
+            color: white;
+            padding: 10px 16px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        @media (max-width: 768px) {
+            table, th, td { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Incheckningslogg (Admin)</h1>
+
+    <!-- FILTRERA DROPDOWN - START -->
+    <form method="get" class="filter-form">
+        <label for="user">Filtrera på användare:</label>
+        <select name="user" id="user" onchange="this.form.submit()">
+            <option value="">Alla</option>
+            {% for namn in alla_anvandare %}
+                <option value="{{ namn }}" {% if selected_user == namn %}selected{% endif %}>{{ namn }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    <!-- FILTRERA DROPDOWN - SLUT -->
+
+    {% if records and records|length > 0 %}
+    <table>
+        <thead>
+            <tr>
+                {% for col in columns %}
+                <th>{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in records %}
+            <tr>
+                {% for col in columns %}
+                <td>{{ r.get(col, '') }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Ingen loggdata hittades.</p>
+    {% endif %}
+
+    <a href="{{ url_for('admin.admin_panel') }}" class="btn-back">Tillbaka</a>
+</body>
+</html>
+
+
+
+

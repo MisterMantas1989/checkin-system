@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Chatt</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to bottom right, #e0f7fa, #b2ebf2);
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 230px;
+            background: linear-gradient(180deg, #122850 0%, #20579a 100%);
+            color: white;
+            padding-top: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .sidebar img {
+            max-width: 140px;
+            border-radius: 10px;
+            margin-bottom: 32px;
+        }
+        .menu a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            width: 100%;
+            font-size: 1rem;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .menu a:hover,
+        .menu a.active {
+            background-color: #5cb0ff;
+        }
+        .main-content {
+            flex: 1;
+            padding: 30px;
+        }
+        h2 {
+            text-align: center;
+            color: #174273;
+            margin-bottom: 24px;
+        }
+        .chat-box {
+            max-width: 520px;
+            margin: auto;
+            background: #ffffffee;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .chat-message {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            border-radius: 6px;
+            padding: 12px 10px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .message-content {
+            max-width: 65%;
+        }
+        .message-content strong {
+            color: #174273;
+            font-size: 0.9rem;
+        }
+        .chat-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+        .chat-actions button,
+        .chat-actions a.button-link {
+            width: 90px;
+            min-width: 90px;
+            max-width: 90px;
+            padding: 7px 0;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: bold;
+            display: block;
+            margin-left: auto;
+            margin-right: 0;
+        }
+        .delete-btn {
+            background-color: #d9534f;
+            color: white;
+        }
+        .edit-btn {
+            background-color: #5cb0ff;
+            color: white;
+            text-decoration: none;
+        }
+        .delete-btn:hover {
+            background-color: #b92b27;
+        }
+        .edit-btn:hover {
+            background-color: #338fd4;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        button[type="submit"]:not(.delete-btn) {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #5cb0ff;
+            border: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button[type="submit"]:not(.delete-btn):hover {
+            background-color: #4296e7;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Firmalogo">
+        <div class="menu">
+            <a href="{{ url_for('admin.admin_panel') }}">Instrumentpanel</a>
+            <a href="{{ url_for('admin.admin_schema') }}">Schema</a>
+            <a href="{{ url_for('admin.admin_schema_add') }}">Add schema</a>
+            <a href="{{ url_for('admin.admin_logg') }}">Logg</a>
+            <a href="{{ url_for('chat.chat') }}" class="active">Chat</a>
+            <a href="{{ url_for('admin.admin_logout') }}">Logga ut</a>
+        </div>
+    </div>
+    <div class="main-content">
+        <h2>Teamchatt</h2>
+        <div class="chat-box">
+            {% for msg in messages %}
+                <div class="chat-message">
+                    <div class="message-content">
+                        <strong>{{ msg.user }} {{ msg.timestamp }}</strong><br>
+                        {{ msg.message }}
+                    </div>
+                    <div class="chat-actions">
+                        <form method="POST" action="{{ url_for('chat.chat_delete', msg_id=msg.id) }}">
+                            <button type="submit" class="delete-btn">Radera</button>
+                        </form>
+                        <a href="{{ url_for('chat.chat_edit', msg_id=msg.id) }}" class="edit-btn button-link">Redigera</a>
+                    </div>
+                </div>
+            {% endfor %}
+            <form method="post">
+                <input type="text" name="message" placeholder="Skriv ett meddelande..." required>
+                <button type="submit">Skicka</button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

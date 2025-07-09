@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin – Excel-logg</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 40px;}
+        table { border-collapse: collapse; width: 100%; background: white;}
+        th, td { padding: 10px; border: 1px solid #ccc; text-align: center;}
+        th { background: #1a698c; color: white; }
+        tr:nth-child(even) { background: #e7f2fa; }
+    </style>
+</head>
+<body>
+    <h1>Admin – In/Ut Excel-logg</h1>
+    {% if records %}
+    <table>
+        <thead>
+            <tr>
+            {% for col in columns %}
+                <th>{{ col }}</th>
+            {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in records %}
+            <tr>
+            {% for col in columns %}
+                <td>{{ r[col] }}</td>
+            {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Ingen logg hittades i Excel-filen.</p>
+    {% endif %}
+</body>
+</html>

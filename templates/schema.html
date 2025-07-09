@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Schema</title>
+    <style>
+        table { 
+            border-collapse: collapse; 
+            width: 98%; 
+            margin: 30px auto; 
+            font-size: 17px;
+        }
+        th, td { 
+            border: 1px solid #888; 
+            padding: 10px 14px; 
+            text-align: left; 
+        }
+        th { background: #d9edf7; }
+        tr:nth-child(even) { background: #f7f7f7; }
+        tr:hover { background: #c1e1ec; }
+        th:nth-child(5), td:nth-child(5) { min-width: 250px; max-width: 360px; }
+        th:nth-child(6), td:nth-child(6) { min-width: 200px; max-width: 320px; }
+        @media (max-width: 700px) {
+            table { font-size: 13px; }
+            th, td { padding: 7px 4px; }
+            th:nth-child(5), td:nth-child(5), th:nth-child(6), td:nth-child(6) {
+                min-width: 100px; max-width: 120px;
+            }
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div style="width: 90%; margin: 30px auto;">
+        <h1 style="text-align:center;">Schema</h1>
+        <table>
+            <tr>
+                {% for col in columns %}
+                    <th>{{ col }}</th>
+                {% endfor %}
+            </tr>
+            {% for rad in records %}
+                <tr>
+                    {% for col in columns %}
+                        <td>{{ rad[col] }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+        <a href="{{ url_for('checkin.checkin') }}" class="back-link">⬅️ Tillbaka till Check-in sidan</a>
+    </div>
+</body>
+</html>
+
+
+
+
+

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Teamchatt</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to bottom right, #e0f7fa, #b2ebf2);
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 230px;
+            background: linear-gradient(180deg, #122850 0%, #20579a 100%);
+            color: white;
+            padding-top: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .sidebar-logo-box {
+            margin-bottom: 32px;
+        }
+        .sidebar img {
+            max-width: 140px;
+            border-radius: 10px;
+        }
+        .menu {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .menu a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            width: 100%;
+            font-size: 1rem;
+            border-radius: 6px;
+            transition: background 0.2s;
+            background: none;
+            text-align: left;
+        }
+        .menu a.active,
+        .menu a.btn-main {
+            background-color: #5cb0ff;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            text-align: center;
+            color: #174273;
+            margin-bottom: 24px;
+        }
+        .chat-box {
+            max-width: 720px;
+            margin: auto;
+            background: #ffffffee;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .chat-message {
+            background: #fff;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .chat-message strong {
+            color: #174273;
+            font-size: 0.9rem;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        button[type="submit"] {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #5cb0ff;
+            border: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button[type="submit"]:hover {
+            background-color: #4296e7;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="sidebar-logo-box">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+        </div>
+        <div class="menu">
+            <a href="{{ url_for('chat.employee_chat') }}" class="active">Chatt</a>
+            <a href="{{ url_for('checkin.checkin') }}" class="btn-main">Tillbaka till checkin</a>
+        </div>
+    </div>
+    <div class="main-content">
+        <h2>Teamchatt</h2>
+        <div class="chat-box">
+            {% for msg in messages %}
+                <div class="chat-message">
+                    <strong>{{ msg.user }} {{ msg.timestamp }}</strong><br>
+                    {{ msg.message }}
+                </div>
+            {% endfor %}
+            <form method="post">
+                <input type="text" name="message" placeholder="Skriv ett meddelande..." required>
+                <button type="submit">Skicka</button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

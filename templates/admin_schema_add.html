@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Lägg till schemarad</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: linear-gradient(120deg, #e0f2ff 0%, #c2e9fb 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .add-form-wrapper {
+            max-width: 320px;
+            margin: 60px auto 0 auto;
+            background: rgba(255,255,255,0.98);
+            border-radius: 15px;
+            box-shadow: 0 4px 16px 0 rgba(30, 89, 170, 0.09);
+            padding: 28px 20px 18px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            width: 100%;
+            text-align: center;
+            font-size: 1.32rem;
+            margin-bottom: 20px;
+            color: #20579a;
+            margin-top: 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            margin-top: 12px;
+            color: #123560;
+            font-weight: 500;
+            font-size: 0.99rem;
+        }
+        input[type="date"],
+        input[type="time"],
+        input[type="text"] {
+            width: 100%;
+            padding: 8px 9px;
+            margin-bottom: 3px;
+            border-radius: 7px;
+            border: 1px solid #b5d2e2;
+            font-size: 1rem;
+            background: #f7fbff;
+            transition: border 0.18s;
+            box-sizing: border-box;
+        }
+        input:focus {
+            border: 1.5px solid #00b7e5;
+            outline: none;
+        }
+        .btn-main {
+            width: 100%;
+            padding: 11px 0;
+            background: #00b7e5;
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-size: 1.03rem;
+            font-weight: 600;
+            margin-top: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px 0 #bbe3f6;
+            transition: background 0.18s;
+        }
+        .btn-main:hover,
+        .btn-main:focus {
+            background: #0097b2;
+        }
+        .message {
+            color: green;
+            text-align: center;
+            font-size: 1.08rem;
+            margin-bottom: 12px;
+            margin-top: -10px;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            color: #2567b2;
+            text-decoration: underline;
+            font-size: 1rem;
+        }
+        @media (max-width: 430px) {
+            .add-form-wrapper {
+                padding: 9px 3vw 9px 3vw;
+                margin: 12px 2vw;
+                max-width: 98vw;
+            }
+            h2 { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="add-form-wrapper">
+        <h2>Lägg till schemarad</h2>
+        {% if message %}
+            <div class="message">{{ message }}</div>
+        {% endif %}
+        <form method="POST" autocomplete="off" style="width:100%;">
+            <label>Anställd:</label>
+            <input type="text" name="namn" placeholder="Skriv anställds namn" required>
+
+            <label>Datum:</label>
+            <input type="date" name="datum" required>
+
+            <label>Starttid:</label>
+            <input type="time" name="starttid" required>
+
+            <label>Sluttid:</label>
+            <input type="time" name="sluttid" required>
+
+            <!-- Ändrat: Plats -> Adress -->
+            <label>Adress:</label>
+            <input type="text" name="adress" placeholder="Ange adress" required>
+
+            <label>Kommentar:</label>
+            <input type="text" name="kommentar" placeholder="Valfritt">
+
+            <button class="btn-main" type="submit">Spara schemarad</button>
+        </form>
+        <a class="back-link" href="{{ url_for('admin.admin_schema') }}">Tillbaka till alla scheman</a>
+    </div>
+</body>
+</html>
+
+
+
+
+
+

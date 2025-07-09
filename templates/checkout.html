@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Checka ut</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #mapid {
+            height: 300px;
+            width: 100%;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .status-message {
+            margin: 12px 0;
+            font-size: 18px;
+            color: #0a6699;
+        }
+        .btn-main:disabled {
+            background: #bbb;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- SIDOMENY -->
+        <div class="sidebar">
+            <div class="sidebar-logo-box">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            </div>
+            <div class="menu">
+                <!-- Lägg till fler länkar om det behövs -->
+            </div>
+        </div>
+        <!-- HUVUDINNEHÅLL -->
+        <div class="main-content">
+            <img src="{{ url_for('static', filename='logo.png') }}" class="logo-large" alt="Logo">
+            <h2 class="page-title">Checka ut</h2>
+            <div class="status-message" id="status-message">
+                Söker GPS-position...
+            </div>
+            <div id="mapid"></div>
+            <form method="POST">
+                <input type="hidden" name="lat" id="lat">
+                <input type="hidden" name="lon" id="lon">
+                <button type="submit" class="btn-main" id="checkout-btn" disabled>Checka ut med adress</button>
+            </form>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let bestPosition = null;
+        let watchId = null;
+        let maxWaitTime = 12000; // 12 sekunder
+        let timerId = null;
+        let map = null;
+        const precisionLimit = 50; // meter
+        const statusElem = document.getElementById('status-message');
+        const mapDiv = document.getElementById('mapid');
+        const checkoutBtn = document.getElementById('checkout-btn');
+
+        function updateStatus(msg, color="#0a6699") {
+            statusElem.innerText = msg;
+            statusElem.style.color = color;
+        }
+
+        function renderMap(lat, lon) {
+            mapDiv.style.display = 'block';
+            if (map) {
+                map.setView([lat, lon], 15);
+                return;
+            }
+            map = L.map('mapid').setView([lat, lon], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+            L.marker([lat, lon]).addTo(map)
+                .bindPopup("Din position").openPopup();
+        }
+
+        function stopAndSetBestPosition() {
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            if (timerId !== null) clearTimeout(timerId);
+            if (bestPosition) {
+                const { latitude, longitude, accuracy } = bestPosition.coords;
+                document.getElementById('lat').value = latitude;
+                document.getElementById('lon').value = longitude;
+                checkoutBtn.disabled = false;
+                renderMap(latitude, longitude);
+                updateStatus(`GPS-noggrannhet: ${Math.round(accuracy)} meter${accuracy > precisionLimit ? " (observera låg precision!)" : ""}`);
+            } else {
+                updateStatus("Kunde inte hämta GPS-position.", "#c00");
+                mapDiv.style.display = 'none';
+                checkoutBtn.disabled = true;
+            }
+        }
+
+        function handlePosition(pos) {
+            if (!bestPosition || pos.coords.accuracy < bestPosition.coords.accuracy) {
+                bestPosition = pos;
+            }
+            updateStatus(`Söker GPS... Nuvarande noggrannhet: ${Math.round(pos.coords.accuracy)} meter`);
+            if (pos.coords.accuracy <= precisionLimit) {
+                stopAndSetBestPosition();
+            }
+        }
+
+        if (navigator.geolocation) {
+            watchId = navigator.geolocation.watchPosition(handlePosition, function(err){
+                updateStatus("Kunde inte hitta din position. Ge tillgång till plats eller försök igen utomhus.", "#c00");
+                mapDiv.style.display = 'none';
+                checkoutBtn.disabled = true;
+            }, {
+                enableHighAccuracy: true,
+                timeout: maxWaitTime,
+                maximumAge: 0
+            });
+            timerId = setTimeout(stopAndSetBestPosition, maxWaitTime);
+        } else {
+            updateStatus("Din webbläsare stödjer inte platstjänster.", "#c00");
+            checkoutBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Incheckningshistorik</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        h1 {
+            margin-top: 30px;
+        }
+        .btn-back {
+            margin-top: 20px;
+            display: inline-block;
+            background-color: #007B8F;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        @media (max-width: 700px) {
+            table, th, td { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Din historik{% if session.get('username') %} för {{ session['username'] }}{% endif %}</h1>
+
+    {% if entries and entries|length > 0 %}
+    <table>
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>In-tid</th>
+                <th>In-adress</th>
+                <th>Ut-tid</th>
+                <th>Ut-adress</th>
+                <th>Arbetad tid (min)</th>
+                <th>Källa</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in entries %}
+            <tr>
+                <td>
+                  {{ e.get('Checkin-datum', '') or (e.get('checkin_time', '').split(' ')[0] if e.get('checkin_time') else '') }}
+                </td>
+                <td>
+                  {{ e.get('Checkin-tid', '') or (e.get('checkin_time', '').split(' ')[1] if e.get('checkin_time') else '') }}
+                </td>
+                <td>
+                  {{ e.get('Checkin-adress', '') or e.get('checkin_address', '') }}
+                </td>
+                <td>
+                  {% if e.get('Checkout-tid') %}
+                    {{ e.get('Checkout-tid') }}
+                  {% elif e.get('checkout_time') %}
+                    {{ e.get('checkout_time', '').split(' ')[1] }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>
+                  {{ e.get('Checkout-adress', '') or e.get('checkout_address', '') }}
+                </td>
+                <td>
+                  {{ e.get('Total tid (minuter)', '') or e.get('work_time_minutes', '') }}
+                </td>
+                <td>
+                  {{ e.get('källa', 'Okänd') }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Ingen historik hittades.</p>
+    {% endif %}
+
+    <a href="{{ url_for('checkin.checkin') }}" class="btn-back">Tillbaka</a>
+</body>
+</html>
+
+
+
+
+

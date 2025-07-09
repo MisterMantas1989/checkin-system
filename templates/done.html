@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Meddelande</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="main-container">
+        <!-- SIDOMENY -->
+        <div class="sidebar">
+            <div class="sidebar-logo-box">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            </div>
+            <div class="menu">
+                {% if session.get('username') %}
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="{{ url_for('chat.employee_chat') }}" class="sidebar-link">🗨️ Chatt</a></li>
+                    <li><a href="{{ url_for('history.schema') }}" class="sidebar-link">📅 Visa schema</a></li>
+                    <li><a href="{{ url_for('history.history') }}" class="sidebar-link">📜 Historik</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}" class="sidebar-link">🚪 Logga ut</a></li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- HUVUDINNEHÅLL -->
+        <div class="main-content">
+            <img src="{{ url_for('static', filename='logo.png') }}" class="logo-large" alt="Logo">
+            <h2 class="page-title">Status</h2>
+            <div class="status-message">{{ message }}</div>
+
+            <div id="mapid" style="height: 300px; width: 100%; margin: 20px 0; display:none;"></div>
+
+            {% if show_checkout %}
+            <form method="POST" action="{{ url_for('checkin.checkout') }}">
+                <input type="hidden" name="lat" id="lat">
+                <input type="hidden" name="lon" id="lon">
+                <button type="submit" class="btn-main">Checka ut med adress</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        if (document.getElementById('lat')) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                var lat = pos.coords.latitude;
+                var lon = pos.coords.longitude;
+                document.getElementById('lat').value = lat;
+                document.getElementById('lon').value = lon;
+
+                var mapDiv = document.getElementById('mapid');
+                mapDiv.style.display = 'block';
+                var map = L.map('mapid').setView([lat, lon], 15);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+
+                L.marker([lat, lon]).addTo(map)
+                    .bindPopup("Din position").openPopup();
+            }, function(err){
+                alert('Kunde inte hämta GPS-position!');
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
