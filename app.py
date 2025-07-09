@@ -1,23 +1,24 @@
-from config import SQLALCHEMY_DATABASE_URI
 from flask import Flask, redirect, request
 from flask_cors import CORS
 from flask_migrate import Migrate
-from models import db
+from backend.config import SQLALCHEMY_DATABASE_URI
+from backend.models import db
+
 import os
 
 # 🔹 Blueprints – Webbgränssnitt
-from routesauth import auth_bp
-from routesadmin import admin_bp
-from routeschat import chat_bp
-from routescheckin import checkin_bp
-from routeshistory import history_bp
+from backend.routesauth import auth_bp
+from backend.routesadmin import admin_bp
+from backend.routeschat import chat_bp
+from backend.routescheckin import checkin_bp
+from backend.routeshistory import history_bp
 
 # 🔹 Blueprints – API för mobil/extern access
-from api_auth import api_auth_bp
-from api_checkin import api_checkin_bp
-from api_misc import api_misc_bp
-from api_chat import api_chat_bp
-from api_user import api_user_bp  # 🆕 IMPORT – för login/register
+from backend.api_auth import api_auth_bp
+from backend.api_checkin import api_checkin_bp
+from backend.api_misc import api_misc_bp
+from backend.api_chat import api_chat_bp
+from backend.api_user import api_user_bp  # 🆕 Login/Register API
 
 # 🔧 Initiera Flask-app
 app = Flask(__name__)
@@ -28,11 +29,17 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # ✅ Aktivera CORS – behövs om frontend körs från mobil/expo/webb
 CORS(app, supports_credentials=True)
 
-# 🛠 Initiera databas
+# 🛠 Initiera databas & migration
 db.init_app(app)
-
-# 🆕 Lägg till Migrate
 migrate = Migrate(app, db)
+
+# 🏁 Initiera databasen direkt vid uppstart – inte vänta på första request
+with app.app_context():
+    try:
+        db.create_all()
+        print("✅ Databasen är initierad.")
+    except Exception as e:
+        print(f"❌ Fel vid databasinitiering: {e}")
 
 # 📡 Logga inkommande API-anrop för felsökning
 @app.before_request
@@ -55,16 +62,21 @@ app.register_blueprint(api_auth_bp)
 app.register_blueprint(api_checkin_bp)
 app.register_blueprint(api_misc_bp)
 app.register_blueprint(api_chat_bp)
-app.register_blueprint(api_user_bp)  # ✅ REGISTERA USER API
+app.register_blueprint(api_user_bp)
 
 # 🌐 Root redirect
 @app.route("/")
 def index():
     return redirect("/login")
 
-# ▶️ Starta servern
+# 🚀 Server-start logg
+print("🚀 Flask-appen är startad och alla routes är laddade.")
+
+# ▶️ Starta servern (lokalt – Render använder gunicorn)
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000), 
+    app.run(host="0.0.0.0", port=5000)
+
+
 
 
 

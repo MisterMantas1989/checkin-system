@@ -1,17 +1,19 @@
 import os
-
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
+raw_uri = os.getenv("DATABASE_URL")
 
-SQLALCHEMY_DATABASE_URI = (
-    f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-)
+if raw_uri is None:
+    raise ValueError("❌ DATABASE_URL not set!")
+
+# Fix: Convert `postgres://` to `postgresql://` (Render/Supabase issue)
+SQLALCHEMY_DATABASE_URI = re.sub(r'^postgres://', 'postgresql://', raw_uri)
+
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+
+
 

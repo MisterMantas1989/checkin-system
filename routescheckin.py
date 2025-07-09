@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 from flask import Blueprint, redirect, render_template, request, session, url_for
 from geopy.geocoders import Nominatim
-from models import Checkin, User, db
+from backend.models import Checkin, User, db
 from openpyxl import load_workbook
 
 checkin_bp = Blueprint("checkin", __name__)
