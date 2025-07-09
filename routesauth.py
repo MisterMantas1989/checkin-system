@@ -10,7 +10,12 @@ def login():
     if request.method == 'POST':
         namn = request.form.get('namn')
         lösenord = request.form.get('lösenord')
-        print("Inloggningstest:", namn, lösenord)
+        print("🔐 Inloggningstest med namn:", namn)
+
+        if not namn or not lösenord:
+            error = "Vänligen fyll i både namn och lösenord."
+            return render_template('login.html', error=error), 400
+
         try:
             user = User.query.filter_by(name=namn).first()
         except Exception as e:
@@ -19,19 +24,20 @@ def login():
             return render_template('login.html', error=error), 500
 
         if user:
-            print("Användare finns. Hash i databasen:", user.password_hash)
             if check_password_hash(user.password_hash, lösenord):
-                print("Hash-VERIFIERING OK!")
+                print("✅ Inloggning OK för användare:", user.name)
                 session['user_id'] = user.id
                 session['username'] = user.name
                 session['usermobile'] = getattr(user, "mobil", "")
                 return redirect(url_for('checkin.checkin'))
             else:
-                print("Hash-VERIFIERING MISSLYCKADES!")
+                print("❌ Fel lösenord för användare:", user.name)
         else:
-            print("Ingen användare hittades!")
+            print("❌ Ingen användare hittades med namn:", namn)
 
         error = "Fel namn eller lösenord."
+        return render_template('login.html', error=error), 401
+
     return render_template('login.html', error=error)
 
 
