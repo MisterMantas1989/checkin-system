@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
-from backend.models import Checkin, User, db
+from models import Checkin, User, db
 from geopy.geocoders import Nominatim
 import pandas as pd
 import os
 from openpyxl import load_workbook
-from backend.api_auth import get_user_from_token
+from api_auth import get_user_from_token
 
 api_checkin_bp = Blueprint("api_checkin", __name__)
 XLSX_FILE = "checkin_data.xlsx"

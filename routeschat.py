@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
-from backend.models import Message, db
+from models import Message, db
 
 chat_bp = Blueprint("chat", __name__)
 
