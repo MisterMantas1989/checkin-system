@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import pytz
 
 import pandas as pd
 from flask import Blueprint, redirect, render_template, request, session, url_for
@@ -110,6 +111,79 @@ def checkin():
 
     return render_template("checkin.html", namn=namn, mobil=mobil)
 
+@checkin_bp.route("/checkin", methods=["GET", "POST"])
+def checkin():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("auth.login"))
+
+    namn = user.name
+    mobil = getattr(user, "mobil", "")
+
+    try:
+        df = pd.read_excel(XLSX_FILE, engine="openpyxl")
+    except:
+        df = pd.DataFrame(columns=[
+            "Namn", "Mobil", "Checkin-datum", "Checkin-tid", "Checkin-adress",
+            "Checkout-datum", "Checkout-tid", "Checkout-adress",
+            "Total tid (minuter)", "Total arbetad tid idag"
+        ])
+
+    df["Mobil"] = df["Mobil"].astype(str).str.zfill(10)
+    mask = (
+        (df["Namn"].str.strip() == namn)
+        & (df["Mobil"] == mobil)
+        & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
+    )
+
+    if mask.any():
+        return render_template(
+            "done.html", message=f"{namn}, du är redan incheckad!", show_checkout=True
+        )
+
+    if request.method == "POST":
+        try:
+            lat, lon = float(request.form["lat"]), float(request.form["lon"])
+        except ValueError:
+            return render_template("done.html", message="Ogiltiga GPS-koordinater!")
+
+        now = datetime.now(pytz.timezone("Europe/Stockholm"))  # <-- SVENSK TID!
+        address = get_street_address(lat, lon)
+
+        new_row = {
+            "Namn": namn,
+            "Mobil": mobil,
+            "Checkin-datum": now.strftime("%Y-%m-%d"),
+            "Checkin-tid": now.strftime("%H:%M:%S"),
+            "Checkin-adress": address,
+            "Checkout-datum": "",
+            "Checkout-tid": "",
+            "Checkout-adress": "",
+            "Total tid (minuter)": "",
+            "Total arbetad tid idag": "",
+        }
+
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+        df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
+        autosize_columns()
+
+        db.session.add(
+            Checkin(
+                user=namn,
+                checkin_time=now,
+                checkin_address=address,
+            )
+        )
+        db.session.commit()
+
+        return render_template(
+            "done.html",
+            message=f"Incheckning registrerad för {namn}",
+            show_checkout=True,
+        )
+
+    return render_template("checkin.html", namn=namn, mobil=mobil)
+
 @checkin_bp.route("/checkout", methods=["GET", "POST"])
 def checkout():
     user = get_current_user()
@@ -137,13 +211,14 @@ def checkout():
         except ValueError:
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
-        now = datetime.now()
+        now = datetime.now(pytz.timezone("Europe/Stockholm"))  # <-- SVENSK TID!
         address = get_street_address(lat, lon)
         idx = df[mask].index[-1]
 
         try:
             in_str = f"{df.loc[idx, 'Checkin-datum']} {df.loc[idx, 'Checkin-tid']}"
             in_dt = datetime.strptime(in_str, "%Y-%m-%d %H:%M:%S")
+            in_dt = pytz.timezone("Europe/Stockholm").localize(in_dt)
         except Exception:
             return render_template("done.html", message="Datumformatfel vid incheckning!")
 
@@ -182,4 +257,3 @@ def checkout():
         )
 
     return render_template("checkout.html")
-
