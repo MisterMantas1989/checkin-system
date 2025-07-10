@@ -1,11 +1,10 @@
 import os
 from datetime import datetime
 import pytz
-
 import pandas as pd
 from flask import Blueprint, redirect, render_template, request, session, url_for
 from geopy.geocoders import Nominatim
-from models import Checkin, User, db
+from models import Checkin, db
 from openpyxl import load_workbook
 
 checkin_bp = Blueprint("checkin", __name__)
@@ -31,36 +30,25 @@ def autosize_columns():
         ws.column_dimensions[col[0].column_letter].width = max_length + 2
     wb.save(XLSX_FILE)
 
-def get_current_user():
-    user_id = session.get("user_id")
-    if not user_id:
-        return None
-    return User.query.get(user_id)
-
 @checkin_bp.route("/checkin", methods=["GET", "POST"])
 def checkin():
-    user = get_current_user()
-    if not user:
+    namn = session.get("username", "").strip().lower()
+    if not namn:
         return redirect(url_for("auth.login"))
 
-    namn = user.name
-    mobil = getattr(user, "mobil", "")
-
+    # Läs eller skapa Excel-fil
     try:
         df = pd.read_excel(XLSX_FILE, engine="openpyxl")
-    except:
+    except Exception:
         df = pd.DataFrame(columns=[
-            "Namn", "Mobil", "Checkin-datum", "Checkin-tid", "Checkin-adress",
+            "Namn", "Checkin-datum", "Checkin-tid", "Checkin-adress",
             "Checkout-datum", "Checkout-tid", "Checkout-adress",
             "Total tid (minuter)", "Total arbetad tid idag"
         ])
 
-    df["Mobil"] = df["Mobil"].astype(str).str.zfill(10)
-    mask = (
-        (df["Namn"].str.strip() == namn)
-        & (df["Mobil"] == mobil)
-        & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
-    )
+    # Normalisera namn för säker jämförelse
+    df["Namn"] = df["Namn"].astype(str).str.strip().str.lower()
+    mask = (df["Namn"] == namn) & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
 
     if mask.any():
         return render_template(
@@ -73,14 +61,11 @@ def checkin():
         except ValueError:
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
-        now = datetime.now(pytz.timezone("Europe/Stockholm"))  # <-- SVENSK TID!
-        now_str = now.strftime("%Y-%m-%d %H:%M:%S")           # <-- format för DB!
-
+        now = datetime.now(pytz.timezone("Europe/Stockholm"))
         address = get_street_address(lat, lon)
 
         new_row = {
             "Namn": namn,
-            "Mobil": mobil,
             "Checkin-datum": now.strftime("%Y-%m-%d"),
             "Checkin-tid": now.strftime("%H:%M:%S"),
             "Checkin-adress": address,
@@ -98,7 +83,7 @@ def checkin():
         db.session.add(
             Checkin(
                 user=namn,
-                checkin_time=now_str,        # <-- viktigt, ALLTID STRÄNG!
+                checkin_time=now.strftime("%Y-%m-%d %H:%M:%S"),
                 checkin_address=address,
             )
         )
@@ -110,25 +95,21 @@ def checkin():
             show_checkout=True,
         )
 
-    return render_template("checkin.html", namn=namn, mobil=mobil)
+    return render_template("checkin.html", namn=namn)
 
 @checkin_bp.route("/checkout", methods=["GET", "POST"])
 def checkout():
-    user = get_current_user()
-    if not user:
+    namn = session.get("username", "").strip().lower()
+    if not namn:
         return redirect(url_for("auth.login"))
-
-    namn = user.name
 
     try:
         df = pd.read_excel(XLSX_FILE, engine="openpyxl")
-    except:
+    except Exception:
         return render_template("done.html", message="Ingen historik hittad")
 
-    mask = (
-        (df["Namn"].str.strip() == namn)
-        & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
-    )
+    df["Namn"] = df["Namn"].astype(str).str.strip().str.lower()
+    mask = (df["Namn"] == namn) & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
 
     if not mask.any():
         return render_template("done.html", message="Ingen aktiv incheckning att checka ut från!")
@@ -140,7 +121,6 @@ def checkout():
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
         now = datetime.now(pytz.timezone("Europe/Stockholm"))
-        now_str = now.strftime("%Y-%m-%d %H:%M:%S")  # <-- sträng för DB!
         address = get_street_address(lat, lon)
         idx = df[mask].index[-1]
 
@@ -159,8 +139,8 @@ def checkout():
         df.loc[idx, "Total tid (minuter)"] = total_minutes
 
         today_mask = (
-            (df["Namn"].str.strip() == namn)
-            & (df["Checkin-datum"] == now.strftime("%Y-%m-%d"))
+            (df["Namn"] == namn) &
+            (df["Checkin-datum"] == now.strftime("%Y-%m-%d"))
         )
         total_today = (
             df.loc[today_mask, "Total tid (minuter)"].fillna(0).astype(float).sum()
@@ -170,13 +150,14 @@ def checkout():
         df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
         autosize_columns()
 
+        # Uppdatera SQL-databasen om sådan används
         checkin_entry = (
             Checkin.query.filter_by(user=namn, checkout_time=None)
             .order_by(Checkin.checkin_time.desc())
             .first()
         )
         if checkin_entry:
-            checkin_entry.checkout_time = now_str     # <-- alltid sträng!
+            checkin_entry.checkout_time = now.strftime("%Y-%m-%d %H:%M:%S")
             checkin_entry.checkout_address = address
             checkin_entry.work_time_minutes = total_minutes
             db.session.commit()
