@@ -74,6 +74,8 @@ def checkin():
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
         now = datetime.now(pytz.timezone("Europe/Stockholm"))  # <-- SVENSK TID!
+        now_str = now.strftime("%Y-%m-%d %H:%M:%S")           # <-- format för DB!
+
         address = get_street_address(lat, lon)
 
         new_row = {
@@ -96,7 +98,7 @@ def checkin():
         db.session.add(
             Checkin(
                 user=namn,
-                checkin_time=now,
+                checkin_time=now_str,        # <-- viktigt, ALLTID STRÄNG!
                 checkin_address=address,
             )
         )
@@ -137,7 +139,8 @@ def checkout():
         except ValueError:
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
-        now = datetime.now(pytz.timezone("Europe/Stockholm"))  # <-- SVENSK TID!
+        now = datetime.now(pytz.timezone("Europe/Stockholm"))
+        now_str = now.strftime("%Y-%m-%d %H:%M:%S")  # <-- sträng för DB!
         address = get_street_address(lat, lon)
         idx = df[mask].index[-1]
 
@@ -173,7 +176,7 @@ def checkout():
             .first()
         )
         if checkin_entry:
-            checkin_entry.checkout_time = now
+            checkin_entry.checkout_time = now_str     # <-- alltid sträng!
             checkin_entry.checkout_address = address
             checkin_entry.work_time_minutes = total_minutes
             db.session.commit()
