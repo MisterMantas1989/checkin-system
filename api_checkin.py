@@ -152,8 +152,20 @@ def api_checkout():
 
     idx = df[mask].index[-1]
     in_str = f"{df.loc[idx, 'Checkin-datum']} {df.loc[idx, 'Checkin-tid']}"
-    in_dt = datetime.strptime(in_str, "%Y-%m-%d %H:%M:%S")
-    total_minutes = int((now - in_dt).total_seconds() // 60)
+    
+    # Robust felhantering kring datumtolkning!
+    try:
+        in_dt = datetime.strptime(in_str, "%Y-%m-%d %H:%M:%S")
+    except Exception as e:
+        print("FEL vid tolkning av in_str:", in_str, "Error:", e)
+        return jsonify({"error": f"Kunde inte tolka incheckningstid: '{in_str}'. Fel: {e}"}), 400
+
+    try:
+        total_minutes = int((now - in_dt).total_seconds() // 60)
+    except Exception as e:
+        print("FEL vid beräkning av total_minutes:", now, in_dt, e)
+        return jsonify({"error": "Fel vid tidsberäkning"}), 400
+
     address = get_address(lat, lon)
 
     df.loc[idx, "Checkout-datum"] = now.strftime("%Y-%m-%d")
@@ -192,7 +204,6 @@ def api_checkout():
         "lat": lat,
         "lon": lon,
     })
-
 
 
 
