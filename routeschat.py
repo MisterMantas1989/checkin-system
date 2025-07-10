@@ -2,9 +2,13 @@ from datetime import datetime
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from models import Message, db
+import pytz
 
 chat_bp = Blueprint("chat", __name__)
 
+
+from datetime import datetime
+import pytz
 
 @chat_bp.route("/chat", methods=["GET", "POST"])
 def chat():
@@ -18,7 +22,7 @@ def chat():
                 Message(
                     user=user,
                     message=msg,
-                    timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    timestamp=datetime.now(pytz.timezone("Europe/Stockholm")).strftime("%Y-%m-%d %H:%M:%S"),
                 )
             )
             db.session.commit()
@@ -26,7 +30,6 @@ def chat():
 
     messages = Message.query.order_by(Message.timestamp.desc()).all()
     return render_template("admin_chat.html", messages=messages)
-
 
 @chat_bp.route("/chat2", methods=["GET", "POST"])
 def employee_chat():
@@ -40,7 +43,7 @@ def employee_chat():
                 Message(
                     user=user,
                     message=msg,
-                    timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    timestamp=datetime.now(pytz.timezone("Europe/Stockholm")).strftime("%Y-%m-%d %H:%M:%S"),
                 )
             )
             db.session.commit()
@@ -48,7 +51,6 @@ def employee_chat():
 
     messages = Message.query.order_by(Message.timestamp.desc()).all()
     return render_template("chat.html", messages=messages)
-
 
 @chat_bp.route("/chat/delete/<int:msg_id>", methods=["POST"])
 def chat_delete(msg_id):
@@ -61,7 +63,6 @@ def chat_delete(msg_id):
         db.session.commit()
         flash("Meddelandet raderat.")
     return redirect(url_for("chat.chat"))
-
 
 @chat_bp.route("/chat/edit/<int:msg_id>", methods=["GET", "POST"])
 def chat_edit(msg_id):
