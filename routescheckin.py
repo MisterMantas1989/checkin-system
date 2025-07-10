@@ -151,10 +151,16 @@ def checkout():
         return redirect(url_for("auth.login"))
 
     print("\n--- UTCHECKNING INITIERAD ---")
-    df = read_excel_df()
+    try:
+        df = read_excel_df()
+    except Exception as e:
+        print("Kunde inte läsa Excel:", e)
+        return render_template("done.html", message="Ingen historik hittad")
 
     df["Namn_lower"] = df["Namn"].astype(str).str.strip().str.lower()
-    mask = (df["Namn_lower"] == namn_lower) & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
+    mask = (df["Namn_lower"] == namn_lower) & (
+        df["Checkout-datum"].isna() | (df["Checkout-datum"] == "")
+    )
 
     if not mask.any():
         print("Ingen aktiv incheckning att checka ut från.")
@@ -163,7 +169,7 @@ def checkout():
     if request.method == "POST":
         try:
             lat, lon = float(request.form["lat"]), float(request.form["lon"])
-        except ValueError:
+        except Exception:
             print("Ogiltiga GPS-koordinater!")
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
@@ -171,6 +177,7 @@ def checkout():
         address = get_street_address(lat, lon)
         idx = df[mask].index[-1]
 
+        # --- Tidshantering ---
         try:
             in_str = f"{df.loc[idx, 'Checkin-datum']} {df.loc[idx, 'Checkin-tid']}"
             in_dt = datetime.strptime(in_str, "%Y-%m-%d %H:%M:%S")
@@ -181,6 +188,7 @@ def checkout():
 
         total_minutes = int((now - in_dt).total_seconds() // 60)
 
+        # --- Skriv till Excel ---
         df.loc[idx, "Checkout-datum"] = now.strftime("%Y-%m-%d")
         df.loc[idx, "Checkout-tid"] = now.strftime("%H:%M:%S")
         df.loc[idx, "Checkout-adress"] = address
@@ -203,7 +211,7 @@ def checkout():
         except Exception as e:
             print("Fel vid skrivning till Excel vid utcheckning:", e)
 
-        # Spara till PostgreSQL
+        # --- Spara till PostgreSQL ---
         try:
             checkin_entry = (
                 Checkin.query.filter_by(user=namn, checkout_time=None)
@@ -214,8 +222,9 @@ def checkout():
                 checkin_entry.checkout_time = now.strftime("%Y-%m-%d %H:%M:%S")
                 checkin_entry.checkout_address = address
                 checkin_entry.work_time_minutes = total_minutes
+                checkin_entry.total_work_today = int(total_today)   # <- SÄTTER TOTALEN!
                 db.session.commit()
-                print("Utcheckning sparad i databasen.")
+                print(f"Utcheckning sparad i databasen (total_work_today={int(total_today)}).")
             else:
                 print("Ingen motsvarande incheckning hittad i databasen.")
         except Exception as e:
@@ -227,4 +236,3 @@ def checkout():
         )
 
     return render_template("checkout.html")
-
