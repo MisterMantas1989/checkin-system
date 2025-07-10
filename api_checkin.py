@@ -140,7 +140,7 @@ def api_checkout():
         return jsonify({"error": "Ogiltiga koordinater"}), 400
 
     namn = user.name
-    # SVENSK TID UTAN MILLISEKUNDER
+    import pytz
     now = datetime.now(pytz.timezone("Europe/Stockholm"))
     df = pd.read_excel(XLSX_FILE, engine="openpyxl")
     mask = (
@@ -152,10 +152,9 @@ def api_checkout():
 
     idx = df[mask].index[-1]
     in_str = f"{df.loc[idx, 'Checkin-datum']} {df.loc[idx, 'Checkin-tid']}"
-    
-    # Robust felhantering kring datumtolkning!
     try:
         in_dt = datetime.strptime(in_str, "%Y-%m-%d %H:%M:%S")
+        in_dt = pytz.timezone("Europe/Stockholm").localize(in_dt)  # Gör in_dt offset-aware
     except Exception as e:
         print("FEL vid tolkning av in_str:", in_str, "Error:", e)
         return jsonify({"error": f"Kunde inte tolka incheckningstid: '{in_str}'. Fel: {e}"}), 400
@@ -204,6 +203,3 @@ def api_checkout():
         "lat": lat,
         "lon": lon,
     })
-
-
-
