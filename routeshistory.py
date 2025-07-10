@@ -10,24 +10,32 @@ XLSX_HISTORY_FILE = "checkin_data.xlsx"  # Filnamn för historik
 # -------- HISTORIK --------
 @history_bp.route("/history")
 def history():
-    namn = session.get("username")
+    namn = session.get("username", "").strip()
     if not namn:
         return redirect(url_for("auth.login"))
 
     entries = []
 
-    # 1. Excel-data
+    # 1. Läs från Excel
     try:
         df = pd.read_excel(XLSX_HISTORY_FILE, engine="openpyxl")
-        # Endast filtrering på namn!
+        # Filtrera exakt på namn (original case & whitespace)
         excel_entries = df[df["Namn"].astype(str).str.strip() == namn]
         for row in excel_entries.to_dict(orient="records"):
-            row["källa"] = "Excel"
-            entries.append(row)
+            # Gör om Excel-fält till gemensamt format om du vill (frivilligt)
+            entry = {
+                "checkin_time": f"{row.get('Checkin-datum', '')} {row.get('Checkin-tid', '')}".strip(),
+                "checkout_time": f"{row.get('Checkout-datum', '')} {row.get('Checkout-tid', '')}".strip(),
+                "checkin_address": row.get("Checkin-adress", ""),
+                "checkout_address": row.get("Checkout-adress", ""),
+                "work_time_minutes": row.get("Total tid (minuter)", ""),
+                "källa": "Excel"
+            }
+            entries.append(entry)
     except Exception as e:
         print("Excel error:", e)
 
-    # 2. PostgreSQL-data
+    # 2. Läs från PostgreSQL
     try:
         db_rows = (
             Checkin.query.filter_by(user=namn)
@@ -35,25 +43,21 @@ def history():
             .all()
         )
         for row in db_rows:
-            entries.append(
-                {
-                    "checkin_time": row.checkin_time,
-                    "checkout_time": row.checkout_time,
-                    "checkin_address": row.checkin_address,
-                    "checkout_address": row.checkout_address,
-                    "work_time_minutes": row.work_time_minutes,
-                    "källa": "PostgreSQL",
-                }
-            )
+            entry = {
+                "checkin_time": row.checkin_time,
+                "checkout_time": row.checkout_time,
+                "checkin_address": row.checkin_address,
+                "checkout_address": row.checkout_address,
+                "work_time_minutes": row.work_time_minutes,
+                "källa": "PostgreSQL",
+            }
+            entries.append(entry)
     except Exception as e:
         print("Database error:", e)
 
-    # 3. Sortera nyast först
+    # 3. Sortera nyast först (oavsett källa)
     def get_sort_key(e):
-        return (
-            e.get("checkin_time")
-            or f"{e.get('Checkin-datum', '')} {e.get('Checkin-tid', '')}"
-        )
+        return e.get("checkin_time", "")
 
     entries.sort(key=get_sort_key, reverse=True)
 

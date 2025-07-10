@@ -32,7 +32,8 @@ def autosize_columns():
 
 @checkin_bp.route("/checkin", methods=["GET", "POST"])
 def checkin():
-    namn = session.get("username", "").strip().lower()
+    namn = session.get("username", "").strip()
+    namn_lower = namn.lower()
     if not namn:
         return redirect(url_for("auth.login"))
 
@@ -46,9 +47,9 @@ def checkin():
             "Total tid (minuter)", "Total arbetad tid idag"
         ])
 
-    # Normalisera namn för säker jämförelse
-    df["Namn"] = df["Namn"].astype(str).str.strip().str.lower()
-    mask = (df["Namn"] == namn) & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
+    # Jämför på små bokstäver men spara original
+    df["Namn_lower"] = df["Namn"].astype(str).str.strip().str.lower()
+    mask = (df["Namn_lower"] == namn_lower) & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
 
     if mask.any():
         return render_template(
@@ -76,10 +77,12 @@ def checkin():
             "Total arbetad tid idag": "",
         }
 
+        df = df.drop(columns=["Namn_lower"], errors="ignore")
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
         autosize_columns()
 
+        # Spara till PostgreSQL
         db.session.add(
             Checkin(
                 user=namn,
@@ -99,7 +102,8 @@ def checkin():
 
 @checkin_bp.route("/checkout", methods=["GET", "POST"])
 def checkout():
-    namn = session.get("username", "").strip().lower()
+    namn = session.get("username", "").strip()
+    namn_lower = namn.lower()
     if not namn:
         return redirect(url_for("auth.login"))
 
@@ -108,8 +112,8 @@ def checkout():
     except Exception:
         return render_template("done.html", message="Ingen historik hittad")
 
-    df["Namn"] = df["Namn"].astype(str).str.strip().str.lower()
-    mask = (df["Namn"] == namn) & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
+    df["Namn_lower"] = df["Namn"].astype(str).str.strip().str.lower()
+    mask = (df["Namn_lower"] == namn_lower) & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
 
     if not mask.any():
         return render_template("done.html", message="Ingen aktiv incheckning att checka ut från!")
@@ -139,7 +143,7 @@ def checkout():
         df.loc[idx, "Total tid (minuter)"] = total_minutes
 
         today_mask = (
-            (df["Namn"] == namn) &
+            (df["Namn_lower"] == namn_lower) &
             (df["Checkin-datum"] == now.strftime("%Y-%m-%d"))
         )
         total_today = (
@@ -147,10 +151,11 @@ def checkout():
         )
         df.loc[today_mask, "Total arbetad tid idag"] = int(total_today)
 
+        df = df.drop(columns=["Namn_lower"], errors="ignore")
         df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
         autosize_columns()
 
-        # Uppdatera SQL-databasen om sådan används
+        # Spara till PostgreSQL – sök på originalnamn!
         checkin_entry = (
             Checkin.query.filter_by(user=namn, checkout_time=None)
             .order_by(Checkin.checkin_time.desc())
@@ -167,3 +172,4 @@ def checkout():
         )
 
     return render_template("checkout.html")
+
