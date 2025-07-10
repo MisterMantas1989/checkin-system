@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
+import pytz  # <-- Lägg till denna!
 from models import Checkin, User, db
 from geopy.geocoders import Nominatim
 import pandas as pd
@@ -56,7 +57,6 @@ def api_status():
         else:
             return jsonify({"status": "out"})
     except Exception as e:
-        # Denna rad loggar EXAKT vad som går fel!
         print("ERROR IN /api/status:", e)
         return jsonify({"error": f"Serverfel: {e}"}), 500
 
@@ -86,7 +86,8 @@ def api_checkin():
     if mask.any():
         return jsonify({"error": "Redan incheckad"}), 400
 
-    now = datetime.now()
+    # SVENSK TID UTAN MILLISEKUNDER
+    now = datetime.now(pytz.timezone("Europe/Stockholm"))
     address = get_address(lat, lon)
 
     new_row = {
@@ -139,7 +140,8 @@ def api_checkout():
         return jsonify({"error": "Ogiltiga koordinater"}), 400
 
     namn = user.name
-    now = datetime.now()
+    # SVENSK TID UTAN MILLISEKUNDER
+    now = datetime.now(pytz.timezone("Europe/Stockholm"))
     df = pd.read_excel(XLSX_FILE, engine="openpyxl")
     mask = (
         (df["Namn"].astype(str).str.strip() == namn)
@@ -190,6 +192,7 @@ def api_checkout():
         "lat": lat,
         "lon": lon,
     })
+
 
 
 
