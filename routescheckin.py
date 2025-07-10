@@ -213,16 +213,21 @@ def checkout():
 
         # --- Spara till PostgreSQL ---
         try:
+            print(f"Letar efter incheckning i databasen: user='{namn}' (case sensitive!) och checkout_time=None")
             checkin_entry = (
-                Checkin.query.filter_by(user=namn, checkout_time=None)
+                Checkin.query
+                .filter(Checkin.user.ilike(namn))     # Gör sökning case-insensitive
+                .filter(Checkin.checkout_time == None)
                 .order_by(Checkin.checkin_time.desc())
                 .first()
             )
+            print("Hittad databas-rad:", checkin_entry)
             if checkin_entry:
                 checkin_entry.checkout_time = now.strftime("%Y-%m-%d %H:%M:%S")
                 checkin_entry.checkout_address = address
                 checkin_entry.work_time_minutes = total_minutes
-                checkin_entry.total_work_today = int(total_today)   # <- SÄTTER TOTALEN!
+                checkin_entry.total_work_today = int(total_today)
+                print("DB Skrivs:", checkin_entry.checkout_address, checkin_entry.total_work_today)
                 db.session.commit()
                 print(f"Utcheckning sparad i databasen (total_work_today={int(total_today)}).")
             else:
@@ -236,3 +241,4 @@ def checkout():
         )
 
     return render_template("checkout.html")
+
