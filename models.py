@@ -23,6 +23,7 @@ class Checkin(db.Model):
     checkout_time = db.Column(db.String(50))
     checkout_address = db.Column(db.String(255))
     work_time_minutes = db.Column(db.Integer)
+    total_work_today = db.Column(db.Integer) 
 
     def to_dict(self):
         return {

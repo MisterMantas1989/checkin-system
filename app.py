@@ -1,10 +1,12 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 from flask import Flask, redirect, request
 from flask_cors import CORS
 from flask_migrate import Migrate
 from config import SQLALCHEMY_DATABASE_URI
 from models import db
-
-import os
 
 # 🔹 Blueprints – Webbgränssnitt
 from routesauth import auth_bp
