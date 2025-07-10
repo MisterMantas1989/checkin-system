@@ -7,9 +7,6 @@ import pytz
 chat_bp = Blueprint("chat", __name__)
 
 
-from datetime import datetime
-import pytz
-
 @chat_bp.route("/chat", methods=["GET", "POST"])
 def chat():
     user = session.get("username") or "Admin"
