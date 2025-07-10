@@ -7,18 +7,18 @@ from models import db
 import os
 
 # 🔹 Blueprints – Webbgränssnitt
-from backend.routesauth import auth_bp
-from backend.routesadmin import admin_bp
-from backend.routeschat import chat_bp
-from backend.routescheckin import checkin_bp
-from backend.routeshistory import history_bp
+from routesauth import auth_bp
+from routesadmin import admin_bp
+from routeschat import chat_bp
+from routescheckin import checkin_bp
+from routeshistory import history_bp
 
 # 🔹 Blueprints – API för mobil/extern access
-from backend.api_auth import api_auth_bp
-from backend.api_checkin import api_checkin_bp
-from backend.api_misc import api_misc_bp
-from backend.api_chat import api_chat_bp
-from backend.api_user import api_user_bp  # 🆕 Login/Register API
+from api_auth import api_auth_bp
+from api_checkin import api_checkin_bp
+from api_misc import api_misc_bp
+from api_chat import api_chat_bp
+from api_user import api_user_bp  # 🆕 Login/Register API
 
 # 🔧 Initiera Flask-app
 app = Flask(__name__)

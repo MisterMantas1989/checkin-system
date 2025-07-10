@@ -31,29 +31,34 @@ def autosize_columns():
 
 @api_checkin_bp.route("/api/status", methods=["GET"])
 def api_status():
-    user = get_user_from_token(request)
-    if not user:
-        return jsonify({"error": "Inte autentiserad"}), 401
+    try:
+        user = get_user_from_token(request)
+        if not user:
+            return jsonify({"error": "Inte autentiserad"}), 401
 
-    df = pd.read_excel(XLSX_FILE, engine="openpyxl")
-    namn = user.name
+        df = pd.read_excel(XLSX_FILE, engine="openpyxl")
+        namn = user.name
 
-    mask = (
-        (df["Namn"].astype(str).str.strip() == namn)
-        & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
-    )
+        mask = (
+            (df["Namn"].astype(str).str.strip() == namn)
+            & (df["Checkout-datum"].isna() | (df["Checkout-datum"] == ""))
+        )
 
-    if mask.any():
-        row = df[mask].iloc[-1]
-        return jsonify({
-            "status": "in",
-            "checkin_time": f"{row['Checkin-datum']} {row['Checkin-tid']}",
-            "checkin_address": row.get("Checkin-adress", ""),
-            "lat": None,
-            "lon": None
-        })
-    else:
-        return jsonify({"status": "out"})
+        if mask.any():
+            row = df[mask].iloc[-1]
+            return jsonify({
+                "status": "in",
+                "checkin_time": f"{row['Checkin-datum']} {row['Checkin-tid']}",
+                "checkin_address": row.get("Checkin-adress", ""),
+                "lat": None,
+                "lon": None
+            })
+        else:
+            return jsonify({"status": "out"})
+    except Exception as e:
+        # Denna rad loggar EXAKT vad som går fel!
+        print("ERROR IN /api/status:", e)
+        return jsonify({"error": f"Serverfel: {e}"}), 500
 
 @api_checkin_bp.route("/api/checkin", methods=["POST"])
 def api_checkin():
