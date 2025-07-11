@@ -66,6 +66,13 @@
     </form>
     <!-- FILTRERA DROPDOWN - SLUT -->
 
+    <!-- Visar vilken historik som visas -->
+    {% if selected_user %}
+        <p><b>Visar historik för användare: {{ selected_user }}</b></p>
+    {% else %}
+        <p><b>Visar allas historik</b></p>
+    {% endif %}
+
     {% if records and records|length > 0 %}
     <table>
         <thead>
@@ -92,6 +99,7 @@
     <a href="{{ url_for('admin.admin_panel') }}" class="btn-back">Tillbaka</a>
 </body>
 </html>
+
 
 
 
