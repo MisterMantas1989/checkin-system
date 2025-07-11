@@ -106,8 +106,13 @@ def admin_logg():
     else:
         entries = Checkin.query.order_by(Checkin.checkin_time.desc()).all()
 
-    records = [e.to_dict() for e in entries]
-    columns = records[0].keys() if records else []
+    records = [e.to_dict() for e in entries if e is not None]
+
+    # Säkrare kolumngenerering – undvik crash om inga records finns!
+    if records:
+        columns = list(records[0].keys())
+    else:
+        columns = []
 
     return render_template(
         "admin_logg.html",
@@ -116,6 +121,7 @@ def admin_logg():
         alla_anvandare=alla_anvandare,
         selected_user=selected_user
     )
+
 
 
 @admin_bp.route("/admin/history")
