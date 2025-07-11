@@ -98,7 +98,7 @@ def admin_logg():
     selected_user = request.args.get("user", "")
 
     # Hämta alla användarnamn till dropdown
-    alla_anvandare = [row[0] for row in db.session.query(Checkin.username).distinct().all()]
+    alla_anvandare = [row[0] for row in db.session.query(Checkin.user).distinct().all()]
 
     # Filtrera historik beroende på om admin valt en specifik användare eller "Alla"
     if selected_user:
