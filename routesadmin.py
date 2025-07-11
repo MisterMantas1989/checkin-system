@@ -94,10 +94,29 @@ def admin_logg():
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin.admin_login"))
 
-    entries = Checkin.query.order_by(Checkin.checkin_time.desc()).all()
+    # Hämta användarfilter från query string (från dropboxen)
+    selected_user = request.args.get("user", "")
+
+    # Hämta alla användarnamn till dropdown
+    alla_anvandare = [row[0] for row in db.session.query(Checkin.username).distinct().all()]
+
+    # Filtrera historik beroende på om admin valt en specifik användare eller "Alla"
+    if selected_user:
+        entries = Checkin.query.filter_by(username=selected_user).order_by(Checkin.checkin_time.desc()).all()
+    else:
+        entries = Checkin.query.order_by(Checkin.checkin_time.desc()).all()
+
     records = [e.to_dict() for e in entries]
     columns = records[0].keys() if records else []
-    return render_template("admin_logg.html", records=records, columns=columns)
+
+    return render_template(
+        "admin_logg.html",
+        records=records,
+        columns=columns,
+        alla_anvandare=alla_anvandare,
+        selected_user=selected_user
+    )
+
 
 @admin_bp.route("/admin/history")
 def admin_history():
