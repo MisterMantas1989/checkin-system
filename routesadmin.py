@@ -88,7 +88,6 @@ def admin_user_delete(user_id):
         db.session.commit()
         flash("Användare raderad.")
     return redirect(url_for("admin.admin_users"))
-
 @admin_bp.route("/admin/logg")
 def admin_logg():
     if not session.get("admin_logged_in"):
@@ -102,7 +101,7 @@ def admin_logg():
 
     # Filtrera historik beroende på om admin valt en specifik användare eller "Alla"
     if selected_user:
-        entries = Checkin.query.filter_by(username=selected_user).order_by(Checkin.checkin_time.desc()).all()
+        entries = Checkin.query.filter_by(user=selected_user).order_by(Checkin.checkin_time.desc()).all()
     else:
         entries = Checkin.query.order_by(Checkin.checkin_time.desc()).all()
 
@@ -121,6 +120,7 @@ def admin_logg():
         alla_anvandare=alla_anvandare,
         selected_user=selected_user
     )
+
 
 
 
