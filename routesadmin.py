@@ -192,6 +192,10 @@ def admin_schema():
 
     # Hämta alla distinkta användarnamn till dropdown
     alla_anvandare = [r.namn for r in db.session.query(Schema.namn).distinct()]
+    # Rensa bort None, tomma strängar, whitespace-namn
+    alla_anvandare = [namn.strip() for namn in alla_anvandare if namn and namn.strip() != '']
+    alla_anvandare = sorted(set(alla_anvandare))
+
     columns = ["id", "namn", "datum", "starttid", "sluttid", "adress", "kommentar"]
     record_dicts = [
         {
@@ -212,6 +216,7 @@ def admin_schema():
         alla_anvandare=alla_anvandare,
         selected_user=user_filter,
     )
+
 
 @admin_bp.route("/admin/schema/add", methods=["GET", "POST"])
 def admin_schema_add():
