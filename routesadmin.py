@@ -88,6 +88,14 @@ def admin_user_delete(user_id):
         db.session.commit()
         flash("Användare raderad.")
     return redirect(url_for("admin.admin_users"))
+
+@admin_bp.route("/admin/logg/delete/<int:logg_id>", methods=["POST"])
+def admin_logg_delete(logg_id):
+    logg = Logg.query.get_or_404(logg_id)
+    db.session.delete(logg)
+    db.session.commit()
+    return redirect(url_for("admin.admin_logg"))
+
 @admin_bp.route("/admin/logg")
 def admin_logg():
     if not session.get("admin_logged_in"):
