@@ -95,29 +95,28 @@ def admin_logg_delete(logg_id):
     db.session.delete(logg)
     db.session.commit()
     return redirect(url_for("admin.admin_logg"))
-
 @admin_bp.route("/admin/logg")
 def admin_logg():
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin.admin_login"))
 
-    # Hämta användarfilter från query string (från dropboxen)
     selected_user = request.args.get("user", "")
-
-    # Hämta alla användarnamn till dropdown
     alla_anvandare = [row[0] for row in db.session.query(Checkin.user).distinct().all()]
 
-    # Filtrera historik beroende på om admin valt en specifik användare eller "Alla"
     if selected_user:
         entries = Checkin.query.filter_by(user=selected_user).order_by(Checkin.checkin_time.desc()).all()
     else:
         entries = Checkin.query.order_by(Checkin.checkin_time.desc()).all()
 
-    records = [e.to_dict() for e in entries if e is not None]
+    # SÄKER: id ingår ALLTID!
+    records = []
+    for e in entries:
+        d = e.to_dict()
+        d["id"] = e.id  # <-- Säkra att id alltid finns!
+        records.append(d)
 
-    # Säkrare kolumngenerering – undvik crash om inga records finns!
     if records:
-        columns = list(records[0].keys())
+        columns = ["id"] + [c for c in records[0].keys() if c != "id"]
     else:
         columns = []
 
@@ -128,6 +127,7 @@ def admin_logg():
         alla_anvandare=alla_anvandare,
         selected_user=selected_user
     )
+
 
 
 
