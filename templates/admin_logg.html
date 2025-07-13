@@ -104,7 +104,8 @@
                     <td>{{ r.get(col, '') }}</td>
                 {% endfor %}
                 <td>
-                    <form method="POST" action="{{ url_for('admin.admin_logg_delete', logg_id=r['id']) }}" style="display:inline;">
+                    {# BYT r['logg_id'] till r['id'] om id-fältet heter "id" i din data! #}
+                    <form method="POST" action="{{ url_for('admin.admin_logg_delete', logg_id=r['logg_id']) }}" style="display:inline;">
                         <button type="submit" class="btn-delete-logg" onclick="return confirm('Vill du verkligen ta bort loggposten?');">Ta bort</button>
                     </form>
                 </td>
@@ -119,6 +120,7 @@
     <a href="{{ url_for('admin.admin_panel') }}" class="btn-back">Tillbaka</a>
 </body>
 </html>
+
 
 
 
