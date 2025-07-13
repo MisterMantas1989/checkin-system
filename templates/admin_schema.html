@@ -8,7 +8,7 @@
         .table-schema {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 24px;
+            margin-top: 0; /* margin nu på .table-scroll istället */
         }
         .table-schema th, .table-schema td {
             padding: 10px 7px;
@@ -54,6 +54,14 @@
             background: #bb2323;
             color: #fff;
         }
+        .table-scroll {
+            max-height: 420px;     /* Justera efter behov! */
+            overflow-y: auto;
+            margin-top: 24px;
+            border: 1px solid #beeaff;
+            background: #fff;
+            border-radius: 7px;
+        }
         @media (max-width: 800px) {
             .main-content { padding: 8px; }
             .table-schema th, .table-schema td { padding: 5px 3px; font-size: 0.92em; }
@@ -91,35 +99,40 @@
 
         <input type="text" id="filter-input" placeholder="Filtrera på namn, datum, plats..." style="margin: 16px 0 14px 0; width: 330px; max-width:95%;">
 
-        <table class="table-schema" id="schema-table">
-            <thead>
-            <tr>
-                {% for col in columns %}
-                    {% if col != 'row_id' and col != 'RadID' %}
-                        <th>{{ col }}</th>
-                    {% endif %}
+        <!-- TABELL MED SCROLL -->
+        <div class="table-scroll">
+            <table class="table-schema" id="schema-table">
+                <thead>
+                <tr>
+                    {% for col in columns %}
+                        {% if col != 'row_id' and col != 'RadID' %}
+                            <th>{{ col }}</th>
+                        {% endif %}
+                    {% endfor %}
+                    <th>Åtgärder</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for rad in records %}
+                <tr>
+                    {% for col in columns %}
+                        {% if col != 'row_id' and col != 'RadID' %}
+                            <td>{{ rad[col] }}</td>
+                        {% endif %}
+                    {% endfor %}
+                    <td>
+                        <a href="{{ url_for('admin.admin_schema_edit', row_id=rad['id']) }}" class="btn-action btn-edit">Redigera</a>
+                        <form method="POST" action="{{ url_for('admin.admin_schema_delete', row_id=rad['id']) }}" style="display:inline;">
+                            <button type="submit" class="btn-action btn-delete" onclick="return confirm('Vill du ta bort raden?')">Ta bort</button>
+                        </form>
+                    </td>
+                </tr>
                 {% endfor %}
-                <th>Åtgärder</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for rad in records %}
-            <tr>
-                {% for col in columns %}
-                    {% if col != 'row_id' and col != 'RadID' %}
-                        <td>{{ rad[col] }}</td>
-                    {% endif %}
-                {% endfor %}
-                <td>
-                    <a href="{{ url_for('admin.admin_schema_edit', row_id=rad['id']) }}" class="btn-action btn-edit">Redigera</a>
-                    <form method="POST" action="{{ url_for('admin.admin_schema_delete', row_id=rad['id']) }}" style="display:inline;">
-                        <button type="submit" class="btn-action btn-delete" onclick="return confirm('Vill du ta bort raden?')">Ta bort</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
+        <!-- SLUT TABELL MED SCROLL -->
+
         <a href="{{ url_for('admin.admin_panel') }}" style="margin-top:20px; display:inline-block;">Tillbaka till adminpanelen</a>
     </div>
 </div>
