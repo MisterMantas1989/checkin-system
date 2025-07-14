@@ -36,7 +36,6 @@ def autosize_columns():
             max_length = max((len(str(cell.value)) for cell in col if cell.value), default=0)
             ws.column_dimensions[col[0].column_letter].width = max_length + 2
         wb.save(XLSX_FILE)
-        print("Autosize för kolumner klar")
     except Exception as e:
         print("Fel vid autosize av Excel-kolumner:", e)
 
@@ -118,16 +117,16 @@ def checkin():
         except Exception as e:
             print("Fel vid Excel-skrivning:", e)
 
-        # PostgreSQL
+        # PostgreSQL — use datetime object (important!)
         try:
             checkin_entry = Checkin(
                 user=namn,
-                checkin_time=now,
+                checkin_time=now,  # ✅ use datetime
                 checkin_address=address,
             )
             db.session.add(checkin_entry)
             db.session.commit()
-            session["checkin_id"] = checkin_entry.id  # 🔐 Spara ID i session
+            session["checkin_id"] = checkin_entry.id
         except Exception as e:
             print("Fel vid databas-skrivning:", e)
             db.session.rollback()
@@ -185,7 +184,7 @@ def checkout():
         except Exception as e:
             print("Fel vid Excel-skrivning:", e)
 
-        # 🔐 Rätt databasrad baserat på session["checkin_id"]
+        # PostgreSQL – use checkin_id if available
         try:
             checkin_entry = None
             checkin_id = session.get("checkin_id")
@@ -196,19 +195,21 @@ def checkout():
                 checkin_entry = (
                     Checkin.query
                     .filter(Checkin.user.ilike(namn))
-                    .filter((Checkin.checkout_time == None) | (Checkin.checkout_time == ''))
+                    .filter(Checkin.checkout_time == None)
                     .order_by(Checkin.checkin_time.desc())
                     .first()
                 )
 
-            if checkin_entry:
-                checkin_entry.checkout_time = now
-                checkin_entry.checkout_address = address
-                checkin_entry.work_time_minutes = total_minutes
-                checkin_entry.total_work_today = int(total_today)
-                db.session.commit()
-            else:
-                print(f"⚠️ Ingen öppen incheckning hittades i databasen för {namn}")
+            if not checkin_entry:
+                print(f"[FEL] Ingen öppen incheckning hittades för {namn}")
+                return render_template("done.html", message="Ingen incheckning hittades i databasen.")
+
+            checkin_entry.checkout_time = now
+            checkin_entry.checkout_address = address
+            checkin_entry.work_time_minutes = total_minutes
+            checkin_entry.total_work_today = int(total_today)
+            db.session.commit()
+
         except Exception as e:
             print("Fel vid databas-skrivning:", e)
             db.session.rollback()
@@ -216,5 +217,6 @@ def checkout():
         return render_template("done.html", message=f"Utcheckning registrerad för {namn}")
 
     return render_template("checkout.html")
+
 
 
