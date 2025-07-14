@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import pytz
 
 import pandas as pd
 from flask import Blueprint, redirect, render_template, request, session, url_for
@@ -10,6 +11,9 @@ from openpyxl import load_workbook
 checkin_bp = Blueprint("checkin", __name__)
 BASE_DIR = os.path.dirname(__file__)
 XLSX_FILE = os.path.join(BASE_DIR, "checkin_data.xlsx")
+
+# Svensk tidszon
+sweden_tz = pytz.timezone("Europe/Stockholm")
 
 def get_street_address(lat, lon):
     try:
@@ -43,7 +47,7 @@ def checkin():
         return redirect(url_for("auth.login"))
 
     namn = user.name
-    mobil = getattr(user, "mobil", "")  # används bara för Excel
+    mobil = getattr(user, "mobil", "")
 
     try:
         df = pd.read_excel(XLSX_FILE, engine="openpyxl")
@@ -62,9 +66,7 @@ def checkin():
     )
 
     if mask.any():
-        return render_template(
-            "done.html", message=f"{namn}, du är redan incheckad!", show_checkout=True
-        )
+        return render_template("done.html", message=f"{namn}, du är redan incheckad!", show_checkout=True)
 
     if request.method == "POST":
         try:
@@ -72,7 +74,7 @@ def checkin():
         except ValueError:
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
-        now = datetime.now()
+        now = datetime.now(sweden_tz)
         address = get_street_address(lat, lon)
 
         new_row = {
@@ -92,7 +94,6 @@ def checkin():
         df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
         autosize_columns()
 
-        # ✅ Uppdaterad utan mobil
         db.session.add(
             Checkin(
                 user=namn,
@@ -102,11 +103,7 @@ def checkin():
         )
         db.session.commit()
 
-        return render_template(
-            "done.html",
-            message=f"Incheckning registrerad för {namn}",
-            show_checkout=True,
-        )
+        return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True)
 
     return render_template("checkin.html", namn=namn, mobil=mobil)
 
@@ -137,13 +134,13 @@ def checkout():
         except ValueError:
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
-        now = datetime.now()
+        now = datetime.now(sweden_tz)
         address = get_street_address(lat, lon)
         idx = df[mask].index[-1]
 
         try:
             in_str = f"{df.loc[idx, 'Checkin-datum']} {df.loc[idx, 'Checkin-tid']}"
-            in_dt = datetime.strptime(in_str, "%Y-%m-%d %H:%M:%S")
+            in_dt = sweden_tz.localize(datetime.strptime(in_str, "%Y-%m-%d %H:%M:%S"))
         except Exception:
             return render_template("done.html", message="Datumformatfel vid incheckning!")
 
@@ -177,11 +174,10 @@ def checkout():
             checkin_entry.work_time_minutes = total_minutes
             db.session.commit()
 
-        return render_template(
-            "done.html", message=f"Utcheckning registrerad för {namn}"
-        )
+        return render_template("done.html", message=f"Utcheckning registrerad för {namn}")
 
     return render_template("checkout.html")
+
 
 
 
