@@ -101,7 +101,7 @@ def checkin():
         )
         db.session.commit()
 
-        return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True)
+        return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True, tid=now.strftime("%Y-%m-%d %H:%M:%S"))
 
     return render_template("checkin.html", namn=namn, mobil=mobil)
 
@@ -172,7 +172,7 @@ def checkout():
             checkin_entry.work_time_minutes = total_minutes
             db.session.commit()
 
-        return render_template("done.html", message=f"Utcheckning registrerad för {namn}")
+        return render_template("done.html", message=f"Utcheckning registrerad för {namn}", tid=now.strftime("%Y-%m-%d %H:%M:%S"))
 
     return render_template("checkout.html")
 
