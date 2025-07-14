@@ -63,6 +63,7 @@ def read_excel_df():
 
 def is_user_checked_in(namn):
     namn_lower = namn.strip().lower()
+
     # Excel
     df = read_excel_df()
     df["Namn_lower"] = df["Namn"].astype(str).str.strip().str.lower()
@@ -97,6 +98,7 @@ def checkin():
         now = datetime.now(pytz.timezone("Europe/Stockholm"))
         address = get_street_address(lat, lon)
 
+        # Excel
         new_row = {
             "Namn": namn,
             "Checkin-datum": now.strftime("%Y-%m-%d"),
@@ -108,7 +110,6 @@ def checkin():
             "Total tid (minuter)": "",
             "Total arbetad tid idag": "",
         }
-
         df = read_excel_df()
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         try:
@@ -117,15 +118,16 @@ def checkin():
         except Exception as e:
             print("Fel vid Excel-skrivning:", e)
 
+        # PostgreSQL
         try:
-            db.session.add(
-                Checkin(
-                    user=namn,
-                    checkin_time=now.strftime("%Y-%m-%d %H:%M:%S"),
-                    checkin_address=address,
-                )
+            checkin_entry = Checkin(
+                user=namn,
+                checkin_time=now,
+                checkin_address=address,
             )
+            db.session.add(checkin_entry)
             db.session.commit()
+            session["checkin_id"] = checkin_entry.id  # 🔐 Spara ID i session
         except Exception as e:
             print("Fel vid databas-skrivning:", e)
             db.session.rollback()
@@ -183,20 +185,30 @@ def checkout():
         except Exception as e:
             print("Fel vid Excel-skrivning:", e)
 
+        # 🔐 Rätt databasrad baserat på session["checkin_id"]
         try:
-            checkin_entry = (
-                Checkin.query
-                .filter(Checkin.user.ilike(namn))
-                .filter(Checkin.checkout_time == None)
-                .order_by(Checkin.checkin_time.desc())
-                .first()
-            )
+            checkin_entry = None
+            checkin_id = session.get("checkin_id")
+            if checkin_id:
+                checkin_entry = Checkin.query.get(checkin_id)
+
+            if not checkin_entry:
+                checkin_entry = (
+                    Checkin.query
+                    .filter(Checkin.user.ilike(namn))
+                    .filter((Checkin.checkout_time == None) | (Checkin.checkout_time == ''))
+                    .order_by(Checkin.checkin_time.desc())
+                    .first()
+                )
+
             if checkin_entry:
-                checkin_entry.checkout_time = now.strftime("%Y-%m-%d %H:%M:%S")
+                checkin_entry.checkout_time = now
                 checkin_entry.checkout_address = address
                 checkin_entry.work_time_minutes = total_minutes
                 checkin_entry.total_work_today = int(total_today)
                 db.session.commit()
+            else:
+                print(f"⚠️ Ingen öppen incheckning hittades i databasen för {namn}")
         except Exception as e:
             print("Fel vid databas-skrivning:", e)
             db.session.rollback()
