@@ -73,6 +73,7 @@ def checkin():
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
         now = datetime.now(sweden_tz)
+        now_str = now.strftime("%Y-%m-%d %H:%M:%S")
         address = get_street_address(lat, lon)
 
         new_row = {
@@ -95,13 +96,13 @@ def checkin():
         db.session.add(
             Checkin(
                 user=namn,
-                checkin_time=now,
+                checkin_time=now_str,
                 checkin_address=address,
             )
         )
         db.session.commit()
 
-        return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True, tid=now.strftime("%Y-%m-%d %H:%M:%S"))
+        return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True, tid=now_str)
 
     return render_template("checkin.html", namn=namn, mobil=mobil)
 
@@ -133,6 +134,7 @@ def checkout():
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
         now = datetime.now(sweden_tz)
+        now_str = now.strftime("%Y-%m-%d %H:%M:%S")
         address = get_street_address(lat, lon)
         idx = df[mask].index[-1]
 
@@ -163,18 +165,20 @@ def checkout():
 
         checkin_entry = (
             Checkin.query.filter_by(user=namn, checkout_time=None)
-            .order_by(Checkin.checkin_time.desc())
+            .order_by(Checkin.id.desc())
             .first()
         )
         if checkin_entry:
-            checkin_entry.checkout_time = now
+            checkin_entry.checkout_time = now_str
             checkin_entry.checkout_address = address
             checkin_entry.work_time_minutes = total_minutes
+            checkin_entry.total_work_today = int(total_today)
             db.session.commit()
 
-        return render_template("done.html", message=f"Utcheckning registrerad för {namn}", tid=now.strftime("%Y-%m-%d %H:%M:%S"))
+        return render_template("done.html", message=f"Utcheckning registrerad för {namn}", tid=now_str)
 
     return render_template("checkout.html")
+
 
 
 
