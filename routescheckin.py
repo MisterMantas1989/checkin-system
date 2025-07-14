@@ -6,10 +6,12 @@ from flask import Blueprint, redirect, render_template, request, session, url_fo
 from geopy.geocoders import Nominatim
 from models import Checkin, db
 from openpyxl import load_workbook
+from sqlalchemy import func
 
 checkin_bp = Blueprint("checkin", __name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 XLSX_FILE = os.path.join(BASE_DIR, "checkin_data.xlsx")
+TZ = pytz.timezone("Europe/Stockholm")
 
 COLUMNS = [
     "Namn", "Checkin-datum", "Checkin-tid", "Checkin-adress",
@@ -41,39 +43,30 @@ def autosize_columns():
 
 def ensure_excel_file():
     if not os.path.exists(XLSX_FILE):
-        try:
-            df = pd.DataFrame(columns=COLUMNS)
-            df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
-            autosize_columns()
-        except Exception as e:
-            print("Fel vid skapande av Excel-fil:", e)
+        df = pd.DataFrame(columns=COLUMNS)
+        df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
+        autosize_columns()
 
 def read_excel_df():
     ensure_excel_file()
     try:
         return pd.read_excel(XLSX_FILE, engine="openpyxl")
     except Exception:
-        try:
-            df = pd.DataFrame(columns=COLUMNS)
-            df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
-            return df
-        except Exception as e:
-            raise RuntimeError("Kan inte återskapa Excel-fil!") from e
+        df = pd.DataFrame(columns=COLUMNS)
+        df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
+        return df
 
 def is_user_checked_in(namn):
     namn_lower = namn.strip().lower()
-
-    # Excel
     df = read_excel_df()
     df["Namn_lower"] = df["Namn"].astype(str).str.strip().str.lower()
     excel_mask = df["Namn_lower"] == namn_lower
     checkout_vals = df.loc[excel_mask, "Checkout-datum"].astype(str).str.strip()
     excel_checked_in = (checkout_vals == "").any()
 
-    # PostgreSQL
     db_checked_in = (
         Checkin.query
-        .filter(Checkin.user.ilike(namn))
+        .filter(func.lower(func.trim(Checkin.user)) == namn_lower)
         .filter(Checkin.checkout_time == None)
         .first() is not None
     )
@@ -94,10 +87,9 @@ def checkin():
         except ValueError:
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
-        now = datetime.now(pytz.timezone("Europe/Stockholm"))
+        now = datetime.now(TZ)
         address = get_street_address(lat, lon)
 
-        # Excel
         new_row = {
             "Namn": namn,
             "Checkin-datum": now.strftime("%Y-%m-%d"),
@@ -109,26 +101,23 @@ def checkin():
             "Total tid (minuter)": "",
             "Total arbetad tid idag": "",
         }
+
         df = read_excel_df()
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-        try:
-            df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
-            autosize_columns()
-        except Exception as e:
-            print("Fel vid Excel-skrivning:", e)
+        df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
+        autosize_columns()
 
-        # PostgreSQL — use datetime object (important!)
         try:
             checkin_entry = Checkin(
                 user=namn,
-                checkin_time=now,  # ✅ use datetime
+                checkin_time=now,
                 checkin_address=address,
             )
             db.session.add(checkin_entry)
             db.session.commit()
             session["checkin_id"] = checkin_entry.id
         except Exception as e:
-            print("Fel vid databas-skrivning:", e)
+            print("❌ Fel vid databas-skrivning:", e)
             db.session.rollback()
 
         return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True)
@@ -157,13 +146,13 @@ def checkout():
         except Exception:
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
-        now = datetime.now(pytz.timezone("Europe/Stockholm"))
+        now = datetime.now(TZ)
         address = get_street_address(lat, lon)
         idx = df[active_mask].index[-1]
 
         try:
             in_str = f"{df.loc[idx, 'Checkin-datum']} {df.loc[idx, 'Checkin-tid']}"
-            in_dt = pytz.timezone("Europe/Stockholm").localize(datetime.strptime(in_str, "%Y-%m-%d %H:%M:%S"))
+            in_dt = TZ.localize(datetime.strptime(in_str, "%Y-%m-%d %H:%M:%S"))
         except Exception:
             return render_template("done.html", message="Datumformatfel vid incheckning!")
 
@@ -178,45 +167,38 @@ def checkout():
         df.loc[today_mask, "Total arbetad tid idag"] = int(total_today)
 
         df.drop(columns=["Namn_lower"], errors="ignore", inplace=True)
-        try:
-            df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
-            autosize_columns()
-        except Exception as e:
-            print("Fel vid Excel-skrivning:", e)
+        df.to_excel(XLSX_FILE, index=False, engine="openpyxl")
+        autosize_columns()
 
-        # PostgreSQL – use checkin_id if available
         try:
-            checkin_entry = None
-            checkin_id = session.get("checkin_id")
-            if checkin_id:
-                checkin_entry = Checkin.query.get(checkin_id)
+            checkin_entry = (
+                Checkin.query
+                .filter(func.lower(func.trim(Checkin.user)) == namn_lower)
+                .filter(Checkin.checkout_time == None)
+                .order_by(Checkin.checkin_time.desc())
+                .first()
+            )
+
+            print("🔍 CHECKOUT MATCHNING:", checkin_entry)
 
             if not checkin_entry:
-                checkin_entry = (
-                    Checkin.query
-                    .filter(Checkin.user.ilike(namn))
-                    .filter(Checkin.checkout_time == None)
-                    .order_by(Checkin.checkin_time.desc())
-                    .first()
-                )
-
-            if not checkin_entry:
-                print(f"[FEL] Ingen öppen incheckning hittades för {namn}")
                 return render_template("done.html", message="Ingen incheckning hittades i databasen.")
 
             checkin_entry.checkout_time = now
             checkin_entry.checkout_address = address
             checkin_entry.work_time_minutes = total_minutes
             checkin_entry.total_work_today = int(total_today)
-            db.session.commit()
 
+            db.session.commit()
+            print(f"✅ Checkout registrerad för {namn}, ID: {checkin_entry.id}")
         except Exception as e:
-            print("Fel vid databas-skrivning:", e)
+            print("❌ DB commit-fel:", e)
             db.session.rollback()
 
         return render_template("done.html", message=f"Utcheckning registrerad för {namn}")
 
     return render_template("checkout.html")
+
 
 
 
