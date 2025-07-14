@@ -11,8 +11,6 @@ from openpyxl import load_workbook
 checkin_bp = Blueprint("checkin", __name__)
 BASE_DIR = os.path.dirname(__file__)
 XLSX_FILE = os.path.join(BASE_DIR, "checkin_data.xlsx")
-
-# Svensk tidszon
 sweden_tz = pytz.timezone("Europe/Stockholm")
 
 def get_street_address(lat, lon):
@@ -177,6 +175,7 @@ def checkout():
         return render_template("done.html", message=f"Utcheckning registrerad för {namn}")
 
     return render_template("checkout.html")
+
 
 
 
