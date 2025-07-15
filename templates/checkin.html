@@ -11,10 +11,10 @@
             height: 120px;
             width: 95%;
             max-width: 950px;
-            margin: 12px auto 12px auto;
+            margin: 12px auto;
             border-radius: 10px;
             border: 1px solid #b3e0ff;
-            display: block;
+            display: none;
         }
         .main-content {
             display: flex;
@@ -51,14 +51,13 @@
                 {% endif %}
             </div>
         </div>
+
         <!-- HUVUDINNEHÅLL -->
         <div class="main-content">
             <img src="{{ url_for('static', filename='logo.png') }}" class="logo-large" alt="Logo">
             <h2 class="page-title">Checka in</h2>
-            <div class="status-message" id="status-message">
-                Söker GPS-position...
-            </div>
-            <div id="mapid" style="display:none;"></div>
+            <div class="status-message" id="status-message">Söker GPS-position...</div>
+            <div id="mapid"></div>
             <form method="POST" action="{{ url_for('checkin.checkin') }}">
                 <input type="hidden" name="lat" id="lat">
                 <input type="hidden" name="lon" id="lon">
@@ -66,19 +65,19 @@
             </form>
         </div>
     </div>
+
     <script>
-        // Bättre GPS: Vänta på tillräcklig noggrannhet, visa status, auto-timeout
         let bestPosition = null;
         let watchId = null;
-        let maxWaitTime = 12000; // 12 sekunder
+        let maxWaitTime = 12000;
         let timerId = null;
         let map = null;
-        const precisionLimit = 50; // meter
+        const precisionLimit = 50;
         const statusElem = document.getElementById('status-message');
         const mapDiv = document.getElementById('mapid');
         const checkinBtn = document.getElementById('checkin-btn');
 
-        function updateStatus(msg, color="#0a6699") {
+        function updateStatus(msg, color = "#0a6699") {
             statusElem.innerText = msg;
             statusElem.style.color = color;
         }
@@ -101,7 +100,8 @@
         function stopAndSetBestPosition() {
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             if (timerId !== null) clearTimeout(timerId);
-            if (bestPosition) {
+
+            if (bestPosition && bestPosition.coords.latitude && bestPosition.coords.longitude) {
                 const { latitude, longitude, accuracy } = bestPosition.coords;
                 document.getElementById('lat').value = latitude;
                 document.getElementById('lon').value = longitude;
@@ -109,9 +109,12 @@
                 renderMap(latitude, longitude);
                 updateStatus(`GPS-noggrannhet: ${Math.round(accuracy)} meter${accuracy > precisionLimit ? " (observera låg precision!)" : ""}`);
             } else {
-                updateStatus("Kunde inte hämta GPS-position.", "#c00");
+                updateStatus("Kunde inte hämta GPS-position. Ladda om sidan och försök igen.", "#c00");
                 mapDiv.style.display = 'none';
                 checkinBtn.disabled = true;
+                setTimeout(() => {
+                    location.reload();
+                }, 15000);
             }
         }
 
@@ -126,8 +129,9 @@
         }
 
         if (navigator.geolocation) {
+            checkinBtn.disabled = true;
             watchId = navigator.geolocation.watchPosition(handlePosition, function(err){
-                updateStatus("Kunde inte hitta din position. Ge tillgång till plats eller försök igen utomhus.", "#c00");
+                updateStatus("🚫 Kunde inte hitta din position. Ge platsåtkomst eller försök utomhus.", "#c00");
                 mapDiv.style.display = 'none';
                 checkinBtn.disabled = true;
             }, {
@@ -135,6 +139,7 @@
                 timeout: maxWaitTime,
                 maximumAge: 0
             });
+
             timerId = setTimeout(stopAndSetBestPosition, maxWaitTime);
         } else {
             updateStatus("Din webbläsare stödjer inte platstjänster.", "#c00");
@@ -143,6 +148,7 @@
     </script>
 </body>
 </html>
+
 
 
 
