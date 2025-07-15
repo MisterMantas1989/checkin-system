@@ -68,14 +68,14 @@
             });
         }
 
-        // 🔁 Lägg till automatisk redirect till checkin-sidan efter 2 sekunder
-        setTimeout(function() {
-            window.location.href = "{{ url_for('checkin.checkin') }}";
-        }, 2000);
-    </script>
-</body>
-</html>
-
+{% if message and "Utcheckning" in message %}
+<script>
+    // ✅ Endast om "Utcheckning" ingår i meddelandet
+    setTimeout(function() {
+        window.location.href = "{{ url_for('checkin.checkin') }}";
+    }, 2000);
+</script>
+{% endif %}
 
 
 

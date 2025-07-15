@@ -25,7 +25,7 @@ class Checkin(db.Model):
     checkout_address = db.Column(db.String(255))
     work_time_minutes = db.Column(db.Integer)
     total_work_today = db.Column(db.Integer)
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
 
     def to_dict(self):
         sweden_tz = pytz.timezone("Europe/Stockholm")
