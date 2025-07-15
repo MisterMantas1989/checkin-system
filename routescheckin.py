@@ -96,8 +96,9 @@ def checkin():
         db.session.add(
             Checkin(
                 user=namn,
-                checkin_time=now_str,
+                checkin_time=now,            # 👈 korrekt typ
                 checkin_address=address,
+                is_active=True               # 🆕 sätt status som aktiv
             )
         )
         db.session.commit()
@@ -105,6 +106,7 @@ def checkin():
         return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True, tid=now_str)
 
     return render_template("checkin.html", namn=namn, mobil=mobil)
+
 
 @checkin_bp.route("/checkout", methods=["GET", "POST"])
 def checkout():
@@ -164,20 +166,22 @@ def checkout():
         autosize_columns()
 
         checkin_entry = (
-            Checkin.query.filter_by(user=namn, checkout_time=None)
+            Checkin.query.filter_by(user=namn, is_active=True)
             .order_by(Checkin.id.desc())
             .first()
         )
         if checkin_entry:
-            checkin_entry.checkout_time = now_str
+            checkin_entry.checkout_time = now
             checkin_entry.checkout_address = address
             checkin_entry.work_time_minutes = total_minutes
             checkin_entry.total_work_today = int(total_today)
+            checkin_entry.is_active = False  # 🛑 markera som utcheckad
             db.session.commit()
 
         return render_template("done.html", message=f"Utcheckning registrerad för {namn}", tid=now_str)
 
     return render_template("checkout.html")
+
 
 
 
