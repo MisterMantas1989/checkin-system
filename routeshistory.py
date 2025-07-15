@@ -2,6 +2,8 @@ import os
 import pandas as pd
 from flask import Blueprint, redirect, render_template, session, url_for
 from models import Checkin, Schema
+from datetime import datetime
+
 
 history_bp = Blueprint("history", __name__)
 XLSX_SCHEMA_FILE = "schema_data.xlsx"  # Filnamn för schema

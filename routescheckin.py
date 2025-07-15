@@ -72,7 +72,7 @@ def checkin():
         except ValueError:
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
-        now = datetime.now(pytz.utc)
+        now = datetime.now(sweden_tz)
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
         address = get_street_address(lat, lon)
 
@@ -135,7 +135,7 @@ def checkout():
         except ValueError:
             return render_template("done.html", message="Ogiltiga GPS-koordinater!")
 
-        now = datetime.now(pytz.utc)
+        now = datetime.now(sweden_tz)
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
         address = get_street_address(lat, lon)
         idx = df[mask].index[-1]
