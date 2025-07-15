@@ -1,6 +1,7 @@
 from flask import Blueprint, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 from models import User
+from datetime import timedelta
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -26,6 +27,11 @@ def login():
         if user:
             if check_password_hash(user.password_hash, lösenord):
                 print("✅ Inloggning OK för användare:", user.name)
+
+                # 🔒 Permanent session aktiverad
+                session.permanent = True
+                current_app.permanent_session_lifetime = timedelta(hours=4)
+
                 session['user_id'] = user.id
                 session['username'] = user.name
                 session['usermobile'] = getattr(user, "mobil", "")

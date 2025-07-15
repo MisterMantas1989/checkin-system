@@ -7,6 +7,7 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 from config import SQLALCHEMY_DATABASE_URI
 from models import db
+from datetime import timedelta
 
 # 🔹 Blueprints – Webbgränssnitt
 from routesauth import auth_bp
@@ -27,6 +28,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback_dev_key")
 app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=4) 
 
 # ✅ Aktivera CORS – behövs om frontend körs från mobil/expo/webb
 CORS(app, supports_credentials=True)
