@@ -19,13 +19,14 @@ def history():
     # 1. Läs från Excel
     try:
         df = pd.read_excel(XLSX_HISTORY_FILE, engine="openpyxl")
-        # Filtrera exakt på namn (original case & whitespace)
         excel_entries = df[df["Namn"].astype(str).str.strip() == namn]
         for row in excel_entries.to_dict(orient="records"):
-            # Gör om Excel-fält till gemensamt format om du vill (frivilligt)
+            checkin_str = f"{row.get('Checkin-datum', '')} {row.get('Checkin-tid', '')}".strip()
+            checkout_str = f"{row.get('Checkout-datum', '')} {row.get('Checkout-tid', '')}".strip()
+
             entry = {
-                "checkin_time": f"{row.get('Checkin-datum', '')} {row.get('Checkin-tid', '')}".strip(),
-                "checkout_time": f"{row.get('Checkout-datum', '')} {row.get('Checkout-tid', '')}".strip(),
+                "checkin_time": datetime.strptime(checkin_str, "%Y-%m-%d %H:%M:%S") if checkin_str else None,
+                "checkout_time": datetime.strptime(checkout_str, "%Y-%m-%d %H:%M:%S") if checkout_str else None,
                 "checkin_address": row.get("Checkin-adress", ""),
                 "checkout_address": row.get("Checkout-adress", ""),
                 "work_time_minutes": row.get("Total tid (minuter)", ""),
@@ -55,13 +56,12 @@ def history():
     except Exception as e:
         print("Database error:", e)
 
-    # 3. Sortera nyast först (oavsett källa)
-    def get_sort_key(e):
-        return e.get("checkin_time", "")
-
-    entries.sort(key=get_sort_key, reverse=True)
+    # 3. Sortera nyast först, säkert med datetime
+    entries = [e for e in entries if e["checkin_time"] is not None]
+    entries.sort(key=lambda e: e["checkin_time"], reverse=True)
 
     return render_template("history.html", entries=entries)
+
 
 
 @history_bp.route("/schema")

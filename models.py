@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import DateTime
 from datetime import datetime
+import pytz
 
 db = SQLAlchemy()
 
@@ -18,9 +19,9 @@ class User(db.Model):
 class Checkin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.String(100), nullable=False)
-    checkin_time = db.Column(DateTime, default=datetime.utcnow)
+    checkin_time = db.Column(DateTime(timezone=True), default=datetime.utcnow)  
     checkin_address = db.Column(db.String(255))
-    checkout_time = db.Column(DateTime, nullable=True)
+    checkout_time = db.Column(DateTime(timezone=True), nullable=True)           
     checkout_address = db.Column(db.String(255))
     work_time_minutes = db.Column(db.Integer)
     total_work_today = db.Column(db.Integer)
