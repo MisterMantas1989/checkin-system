@@ -15,12 +15,13 @@ class User(db.Model):
     def __repr__(self):
         return f"<User {self.name}>"
 
+
 class Checkin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.String(100), nullable=False)
-    checkin_time = db.Column(DateTime(timezone=True), default=datetime.utcnow)  
+    checkin_time = db.Column(DateTime(timezone=True), default=datetime.utcnow)
     checkin_address = db.Column(db.String(255))
-    checkout_time = db.Column(DateTime(timezone=True), nullable=True)           
+    checkout_time = db.Column(DateTime(timezone=True), nullable=True)
     checkout_address = db.Column(db.String(255))
     work_time_minutes = db.Column(db.Integer)
     total_work_today = db.Column(db.Integer)
@@ -39,18 +40,20 @@ class Checkin(db.Model):
             "Aktiv": self.is_active,
         }
 
+
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.String(100))
     message = db.Column(db.Text)
-    timestamp = db.Column(DateTime, default=datetime.utcnow)
+    timestamp = db.Column(DateTime(timezone=True), default=datetime.utcnow)
 
     def to_dict(self):
+        sweden_tz = pytz.timezone("Europe/Stockholm")
         return {
             "id": self.id,
             "user": self.user,
             "message": self.message,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None
+            "timestamp": self.timestamp.astimezone(sweden_tz).strftime("%Y-%m-%d %H:%M:%S") if self.timestamp else None
         }
 
 
