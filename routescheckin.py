@@ -106,20 +106,17 @@ def checkin():
         db.session.add(
             Checkin(
                 user=namn,
-                checkin_time=now,            # 👈 korrekt typ
+                checkin_time=now,
                 checkin_address=address,
-                is_active=True               # 🆕 sätt status som aktiv
+                is_active=True
             )
         )
-    if request.method == "POST":
-    ...
-    db.session.commit()
+        db.session.commit()
 
-    return redirect(url_for("checkin.confirm"))  # bara denna avslutar POST-flödet
+        return redirect(url_for("checkin.confirm"))
 
-# GET – laddar checkin-sidan
-return render_template("checkin.html", namn=namn, mobil=mobil)
-
+    # GET - laddar sidan
+    return render_template("checkin.html", namn=namn, mobil=mobil)
 
 
 @checkin_bp.route("/checkout", methods=["GET", "POST"])
