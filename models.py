@@ -15,7 +15,6 @@ class User(db.Model):
     def __repr__(self):
         return f"<User {self.name}>"
 
-
 class Checkin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.String(100), nullable=False)
@@ -28,7 +27,7 @@ class Checkin(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
     def to_dict(self):
-        sweden_tz = timezone("Europe/Stockholm")
+        sweden_tz = pytz.timezone("Europe/Stockholm")
         return {
             "ID": self.id,
             "Namn": self.user,
@@ -39,7 +38,6 @@ class Checkin(db.Model):
             "Total tid (minuter)": self.work_time_minutes,
             "Aktiv": self.is_active,
         }
-
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
