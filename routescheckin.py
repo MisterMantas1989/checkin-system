@@ -48,8 +48,6 @@ def confirm():
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Glöm inte importera datetime
     return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True, tid=now_str)
 
-
-
 @checkin_bp.route("/checkin", methods=["GET", "POST"])
 def checkin():
     user = get_current_user()
@@ -113,10 +111,15 @@ def checkin():
                 is_active=True               # 🆕 sätt status som aktiv
             )
         )
-        db.session.commit()
+    if request.method == "POST":
+    ...
+    db.session.commit()
 
-       return redirect(url_for("checkin.confirm"))
-       return render_template("checkin.html", namn=namn, mobil=mobil)
+    return redirect(url_for("checkin.confirm"))  # bara denna avslutar POST-flödet
+
+# GET – laddar checkin-sidan
+return render_template("checkin.html", namn=namn, mobil=mobil)
+
 
 
 @checkin_bp.route("/checkout", methods=["GET", "POST"])
