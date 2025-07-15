@@ -45,6 +45,7 @@
     </div>
 
     <script>
+        // GPS-kod
         if (document.getElementById('lat')) {
             navigator.geolocation.getCurrentPosition(function(pos) {
                 var lat = pos.coords.latitude;
@@ -67,15 +68,18 @@
                 alert('Kunde inte hämta GPS-position!');
             });
         }
+    </script>
 
-{% if message and "Utcheckning" in message %}
-<script>
-    // ✅ Endast om "Utcheckning" ingår i meddelandet
-    setTimeout(function() {
-        window.location.href = "{{ url_for('checkin.checkin') }}";
-    }, 2000);
-</script>
-{% endif %}
+    {% if message and "Utcheckning" in message %}
+    <script>
+        // ⏱️ Auto-redirect till checkin efter lyckad utcheckning
+        setTimeout(function() {
+            window.location.href = "{{ url_for('checkin.checkin') }}";
+        }, 2000);
+    </script>
+    {% endif %}
+</body>
+</html>
 
 
 
