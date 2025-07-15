@@ -61,7 +61,7 @@
         const mapDiv = document.getElementById('mapid');
         const checkoutBtn = document.getElementById('checkout-btn');
 
-        function updateStatus(msg, color="#0a6699") {
+        function updateStatus(msg, color = "#0a6699") {
             statusElem.innerText = msg;
             statusElem.style.color = color;
         }
@@ -84,7 +84,8 @@
         function stopAndSetBestPosition() {
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             if (timerId !== null) clearTimeout(timerId);
-            if (bestPosition) {
+
+            if (bestPosition && bestPosition.coords.latitude && bestPosition.coords.longitude) {
                 const { latitude, longitude, accuracy } = bestPosition.coords;
                 document.getElementById('lat').value = latitude;
                 document.getElementById('lon').value = longitude;
@@ -92,9 +93,14 @@
                 renderMap(latitude, longitude);
                 updateStatus(`GPS-noggrannhet: ${Math.round(accuracy)} meter${accuracy > precisionLimit ? " (observera låg precision!)" : ""}`);
             } else {
-                updateStatus("Kunde inte hämta GPS-position.", "#c00");
+                updateStatus("Kunde inte hämta GPS-position. Ladda om sidan och försök igen.", "#c00");
                 mapDiv.style.display = 'none';
                 checkoutBtn.disabled = true;
+
+                // 🔁 Fallback: tvinga omladdning efter 15 sek
+                setTimeout(() => {
+                    location.reload();
+                }, 15000);
             }
         }
 
@@ -109,15 +115,16 @@
         }
 
         if (navigator.geolocation) {
-            watchId = navigator.geolocation.watchPosition(handlePosition, function(err){
-                updateStatus("Kunde inte hitta din position. Ge tillgång till plats eller försök igen utomhus.", "#c00");
-                mapDiv.style.display = 'none';
+            checkoutBtn.disabled = true;
+            watchId = navigator.geolocation.watchPosition(handlePosition, function (err) {
+                updateStatus("🚫 Platsåtkomst nekad eller otillgänglig. Tillåt platsdelning och försök igen.", "#c00");
                 checkoutBtn.disabled = true;
             }, {
                 enableHighAccuracy: true,
                 timeout: maxWaitTime,
                 maximumAge: 0
             });
+
             timerId = setTimeout(stopAndSetBestPosition, maxWaitTime);
         } else {
             updateStatus("Din webbläsare stödjer inte platstjänster.", "#c00");
@@ -126,6 +133,7 @@
     </script>
 </body>
 </html>
+
 
 
 
