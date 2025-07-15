@@ -38,6 +38,16 @@ def get_current_user():
         return None
     return User.query.get(user_id)
 
+@checkin_bp.route("/checkin/confirm")
+def confirm():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("auth.login"))
+
+    namn = user.name
+     return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True, tid=now_str)
+
+
 @checkin_bp.route("/checkin", methods=["GET", "POST"])
 def checkin():
     user = get_current_user()
@@ -103,9 +113,8 @@ def checkin():
         )
         db.session.commit()
 
-        return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True, tid=now_str)
-
-    return render_template("checkin.html", namn=namn, mobil=mobil)
+       return redirect(url_for("checkin.confirm"))
+       return render_template("checkin.html", namn=namn, mobil=mobil)
 
 
 @checkin_bp.route("/checkout", methods=["GET", "POST"])
