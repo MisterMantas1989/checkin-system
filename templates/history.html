@@ -52,37 +52,17 @@
             </tr>
         </thead>
         <tbody>
-            {% for e in entries %}
-            <tr>
-                <td>
-                  {{ e.get('Checkin-datum', '') or (e.get('checkin_time', '').split(' ')[0] if e.get('checkin_time') else '') }}
-                </td>
-                <td>
-                  {{ e.get('Checkin-tid', '') or (e.get('checkin_time', '').split(' ')[1] if e.get('checkin_time') else '') }}
-                </td>
-                <td>
-                  {{ e.get('Checkin-adress', '') or e.get('checkin_address', '') }}
-                </td>
-                <td>
-                  {% if e.get('Checkout-tid') %}
-                    {{ e.get('Checkout-tid') }}
-                  {% elif e.get('checkout_time') %}
-                    {{ e.get('checkout_time', '').split(' ')[1] }}
-                  {% else %}
-                    -
-                  {% endif %}
-                </td>
-                <td>
-                  {{ e.get('Checkout-adress', '') or e.get('checkout_address', '') }}
-                </td>
-                <td>
-                  {{ e.get('Total tid (minuter)', '') or e.get('work_time_minutes', '') }}
-                </td>
-                <td>
-                  {{ e.get('källa', 'Okänd') }}
-                </td>
-            </tr>
-            {% endfor %}
+        {% for e in entries %}
+        <tr>
+            <td>{{ e.checkin_time.strftime('%Y-%m-%d') if e.checkin_time else '' }}</td>
+            <td>{{ e.checkin_time.strftime('%H:%M:%S') if e.checkin_time else '' }}</td>
+            <td>{{ e.checkin_address or '' }}</td>
+            <td>{{ e.checkout_time.strftime('%H:%M:%S') if e.checkout_time else '-' }}</td>
+            <td>{{ e.checkout_address or '' }}</td>
+            <td>{{ e.work_time_minutes or '' }}</td>
+            <td>{{ e.källa or 'Okänd' }}</td>
+        </tr>
+        {% endfor %}
         </tbody>
     </table>
     {% else %}
@@ -92,6 +72,7 @@
     <a href="{{ url_for('checkin.checkin') }}" class="btn-back">Tillbaka</a>
 </body>
 </html>
+
 
 
 
