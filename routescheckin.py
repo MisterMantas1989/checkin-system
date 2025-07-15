@@ -115,8 +115,13 @@ def checkin():
 
         return redirect(url_for("checkin.confirm"))
 
-    # GET - laddar sidan
+    # GET – förhindra dubbel incheckning
+    active_checkin = Checkin.query.filter_by(user=namn, is_active=True).first()
+    if active_checkin:
+        return redirect(url_for("checkin.confirm"))
+
     return render_template("checkin.html", namn=namn, mobil=mobil)
+
 
 
 @checkin_bp.route("/checkout", methods=["GET", "POST"])
