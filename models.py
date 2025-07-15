@@ -28,12 +28,13 @@ class Checkin(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
     def to_dict(self):
+        sweden_tz = timezone("Europe/Stockholm")
         return {
             "ID": self.id,
             "Namn": self.user,
-            "Checkin-tid": self.checkin_time.isoformat() if self.checkin_time else None,
+            "Checkin-tid": self.checkin_time.astimezone(sweden_tz).strftime("%Y-%m-%d %H:%M:%S") if self.checkin_time else None,
             "Checkin-adress": self.checkin_address,
-            "Checkout-tid": self.checkout_time.isoformat() if self.checkout_time else None,
+            "Checkout-tid": self.checkout_time.astimezone(sweden_tz).strftime("%Y-%m-%d %H:%M:%S") if self.checkout_time else None,
             "Checkout-adress": self.checkout_address,
             "Total tid (minuter)": self.work_time_minutes,
             "Aktiv": self.is_active,
