@@ -67,6 +67,11 @@
                 alert('Kunde inte hämta GPS-position!');
             });
         }
+
+        // 🔁 Lägg till automatisk redirect till checkin-sidan efter 2 sekunder
+        setTimeout(function() {
+            window.location.href = "{{ url_for('checkin.checkin') }}";
+        }, 2000);
     </script>
 </body>
 </html>
