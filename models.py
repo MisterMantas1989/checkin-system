@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import DateTime
-from datetime import datetime
+from datetime import datetime, timezone
 import pytz
 
 db = SQLAlchemy()
@@ -19,7 +19,7 @@ class User(db.Model):
 class Checkin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.String(100), nullable=False)
-    checkin_time = db.Column(DateTime(timezone=True), default=datetime.utcnow)
+    checkin_time = db.Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     checkin_address = db.Column(db.String(255))
     checkout_time = db.Column(DateTime(timezone=True), nullable=True)
     checkout_address = db.Column(db.String(255))
@@ -45,7 +45,7 @@ class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.String(100))
     message = db.Column(db.Text)
-    timestamp = db.Column(DateTime(timezone=True), default=datetime.utcnow)
+    timestamp = db.Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         sweden_tz = pytz.timezone("Europe/Stockholm")
@@ -75,6 +75,7 @@ class Schema(db.Model):
             "Adress": self.adress,
             "Kommentar": self.kommentar
         }
+
 
 
 
