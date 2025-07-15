@@ -45,7 +45,9 @@ def confirm():
         return redirect(url_for("auth.login"))
 
     namn = user.name
-     return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True, tid=now_str)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Glöm inte importera datetime
+    return render_template("done.html", message=f"Incheckning registrerad för {namn}", show_checkout=True, tid=now_str)
+
 
 
 @checkin_bp.route("/checkin", methods=["GET", "POST"])
