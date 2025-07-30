@@ -125,8 +125,8 @@
         <div class="chat-box">
             {% for msg in messages %}
                 <div class="chat-message">
-                    <strong>{{ msg.user }} {{ msg.timestamp }}</strong><br>
-                    {{ msg.message }}
+                    <strong>{{ msg.user }} {{ msg.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</strong><br>
+                      {{ msg.message }}
                 </div>
             {% endfor %}
             <form method="post">

@@ -154,8 +154,8 @@
             {% for msg in messages %}
                 <div class="chat-message">
                     <div class="message-content">
-                        <strong>{{ msg.user }} {{ msg.timestamp }}</strong><br>
-                        {{ msg.message }}
+                       <strong>{{ msg.user }} {{ msg.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</strong><br>
+                          {{ msg.message }}
                     </div>
                     <div class="chat-actions">
                         <form method="POST" action="{{ url_for('chat.chat_delete', msg_id=msg.id) }}">
