@@ -15,7 +15,7 @@ from models import Checkin, Schema, User, db
 import requests
 
 admin_bp = Blueprint("admin", __name__)
-ADMIN_PASSWORD = "Mantas"  # Byt detta!
+ADMIN_PASSWORD = "MantasVanagas1989"  # Byt detta!
 
 def send_push_to_all_users(title, body):
     users = User.query.filter(User.push_token.isnot(None)).all()
