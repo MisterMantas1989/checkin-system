@@ -369,6 +369,15 @@ SCORE_NORM_K   = input.float(0.40, "Score Norm: Steepness", group="Score Normali
 normalizeScore(float x) =>
     SCORE_NORM_MAX / (1.0 + math.exp(-SCORE_NORM_K * (x - SCORE_NORM_MID)))
 
+// REFAKTOR #3: avtagande effekt för KORRELERADE signaler.
+// När flera signaler som mäter "samma sak" (t.ex. price vid en låg-nivå) triggar
+// samtidigt ska de inte summeras rakt -> det blåser upp scoren av i praktiken en
+// sak. dimSum3 ger starkaste signalen full vikt och dämpar resten med DIM_RETURN.
+DIM_RETURN = input.float(0.40, "Correlated Signal Damping", group="Score Normalization", minval=0.0, maxval=1.0, step=0.05, tooltip="0 = bara starkaste räknas, 1 = rak summa (gammalt beteende)")
+dimSum3(float a, float b, float c) =>
+    float hi = math.max(a, math.max(b, c))
+    hi + ((a + b + c) - hi) * DIM_RETURN
+
 intentText(int intent) =>
     string txt = "NONE"
     if intent == INTENT_REVERSAL
@@ -3972,9 +3981,8 @@ d2_calcBuyScore(int buySetupType_, int buyIntent_, float cbReversalBias_, float 
     s += coinDnaCode == COIN_DNA_TREND_DRIVER ? 0.35 : 0.0
     s += coinDnaCode == COIN_DNA_MOMENTUM_EXPLOSIVE ? 0.25 : 0.0
     s += coinDnaCode == COIN_DNA_LIQUIDITY_HUNTER and buyIntent_ == INTENT_LIQUIDITY ? 0.25 : 0.0
-    s += nearSupport ? 1.0 : 0.0
-    s += nearCurrentSessionLow ? 0.65 : 0.0
-    s += nearRelayLow ? 0.60 : 0.0
+    // REFAKTOR #3: korrelerat location-kluster med avtagande effekt (var rak summa 1.0+0.65+0.60)
+    s += dimSum3(nearSupport ? 1.0 : 0.0, nearCurrentSessionLow ? 0.65 : 0.0, nearRelayLow ? 0.60 : 0.0)
     s += bullMacd ? 0.8 : 0.0
     s += trendUpBasic ? 1.1 : 0.0
     s += bullVolImpulse ? 0.8 : 0.0
@@ -4050,9 +4058,8 @@ d2_calcSellScore(int sellSetupType_, int sellIntent_, float cbReversalBias_, flo
     s += coinDnaCode == COIN_DNA_TREND_DRIVER ? 0.35 : 0.0
     s += coinDnaCode == COIN_DNA_MOMENTUM_EXPLOSIVE ? 0.25 : 0.0
     s += coinDnaCode == COIN_DNA_LIQUIDITY_HUNTER and sellIntent_ == INTENT_LIQUIDITY ? 0.25 : 0.0
-    s += nearResistance ? 1.0 : 0.0
-    s += nearCurrentSessionHigh ? 0.65 : 0.0
-    s += nearRelayHigh ? 0.60 : 0.0
+    // REFAKTOR #3: korrelerat location-kluster med avtagande effekt (var rak summa 1.0+0.65+0.60)
+    s += dimSum3(nearResistance ? 1.0 : 0.0, nearCurrentSessionHigh ? 0.65 : 0.0, nearRelayHigh ? 0.60 : 0.0)
     s += bearMacd ? 0.8 : 0.0
     s += trendDownBasic ? 1.1 : 0.0
     s += bearVolImpulse ? 0.8 : 0.0
@@ -4110,9 +4117,8 @@ d2_calcBuyContextScore(int buyIntent_, bool buyPermission_) =>
     s += buyIntent_ == INTENT_EXPANSION ? 0.6 : 0.0
     s += buyIntent_ == INTENT_LIQUIDITY ? 0.5 : 0.0
     s += supportZoneQuality >= 2.8 ? 0.45 : supportZoneQuality >= 1.6 ? 0.15 : -0.05
-    s += nearCurrentSessionLow ? 0.28 : 0.0
-    s += nearRelayLow ? 0.24 : 0.0
-    s += nearTrueLowerPool ? 0.24 : 0.0
+    // REFAKTOR #3: korrelerat location-kluster med avtagande effekt (var rak summa 0.28+0.24+0.24)
+    s += dimSum3(nearCurrentSessionLow ? 0.28 : 0.0, nearRelayLow ? 0.24 : 0.0, nearTrueLowerPool ? 0.24 : 0.0)
     s += sessionReclaimBuyRef ? 0.26 : 0.0
     s += sessionBreakoutPressureBuyRef ? 0.18 : 0.0
     s += smartBreakoutReadyBuy ? 0.42 : 0.0
@@ -4161,9 +4167,8 @@ d2_calcSellContextScore(int sellIntent_, bool sellPermission_) =>
     s += sellIntent_ == INTENT_EXPANSION ? 0.6 : 0.0
     s += sellIntent_ == INTENT_LIQUIDITY ? 0.5 : 0.0
     s += resistanceZoneQuality >= 2.8 ? 0.45 : resistanceZoneQuality >= 1.6 ? 0.15 : -0.05
-    s += nearCurrentSessionHigh ? 0.28 : 0.0
-    s += nearRelayHigh ? 0.24 : 0.0
-    s += nearTrueUpperPool ? 0.24 : 0.0
+    // REFAKTOR #3: korrelerat location-kluster med avtagande effekt (var rak summa 0.28+0.24+0.24)
+    s += dimSum3(nearCurrentSessionHigh ? 0.28 : 0.0, nearRelayHigh ? 0.24 : 0.0, nearTrueUpperPool ? 0.24 : 0.0)
     s += sessionReclaimSellRef ? 0.26 : 0.0
     s += sessionBreakoutPressureSellRef ? 0.18 : 0.0
     s += smartBreakdownReadySell ? 0.42 : 0.0
