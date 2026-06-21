@@ -4392,9 +4392,9 @@ buySeedLocationScore += strongSupportRejection ? 0.70 : 0.0
 buySeedLocationScore += buyInstitutionalRejection ? 0.80 : 0.0
 buySeedLocationScore += buyReclaimHighQuality ? 0.20 : 0.0
 buySeedLocationScore += math.max(sessionBiasScore, 0.0) * 0.32
-buySeedLocationScore += buyConfluenceScore * 0.12
-buySeedLocationScore += buyConfluenceStrong ? 0.20 : 0.0
-buySeedLocationScore += math.max(buyPremiumQuality, 0.0) * 0.10
+// REFAKTOR (B): Confluence/Premium borttagna här -> seedLocationScore är nu en ren
+// location-score utan överlapp mot QualityScore. Seed-trösklarna nedan är
+// proportionellt nedjusterade (x0.85) för att kompensera magnitudbortfallet.
 
 float sellSeedLocationScore = 0.0
 sellSeedLocationScore += nearResistance ? 1.0 : 0.0
@@ -4410,9 +4410,9 @@ sellSeedLocationScore += strongResistanceRejection ? 0.70 : 0.0
 sellSeedLocationScore += sellInstitutionalRejection ? 0.80 : 0.0
 sellSeedLocationScore += sellReclaimHighQuality ? 0.20 : 0.0
 sellSeedLocationScore += math.max(-sessionBiasScore, 0.0) * 0.32
-sellSeedLocationScore += sellConfluenceScore * 0.12
-sellSeedLocationScore += sellConfluenceStrong ? 0.20 : 0.0
-sellSeedLocationScore += math.max(sellPremiumQuality, 0.0) * 0.10
+// REFAKTOR (B): Confluence/Premium borttagna här -> seedLocationScore är nu en ren
+// location-score utan överlapp mot QualityScore. Seed-trösklarna nedan är
+// proportionellt nedjusterade (x0.85) för att kompensera magnitudbortfallet.
 
 bool buySeedCore =
      rawLongSetup and
@@ -4502,7 +4502,7 @@ bool buySeedSoft =
      buySetupType != SETUP_NONE and
      buyHasPreSlAnchor and
      (buySoftSeedEvent or strongSupportRejection or buyInstitutionalRejection) and
-     (buySeedLocationScore >= 0.42 or strongSupportRejection or buyInstitutionalRejection) and
+     (buySeedLocationScore >= 0.36 or strongSupportRejection or buyInstitutionalRejection) and
      not counterTrendWeakBuy and
      not (falseBreakoutRiskBuy and buySetupType == SETUP_BREAKOUT_BUILD) and
      not (longExhaustion and buyIntent != INTENT_LIQUIDITY) and
@@ -4515,14 +4515,14 @@ bool sellSeedSoft =
      sellSetupType != SETUP_NONE and
      sellHasPreSlAnchor and
      (sellSoftSeedEvent or strongResistanceRejection or sellInstitutionalRejection) and
-     (sellSeedLocationScore >= 0.42 or strongResistanceRejection or sellInstitutionalRejection) and
+     (sellSeedLocationScore >= 0.36 or strongResistanceRejection or sellInstitutionalRejection) and
      not counterTrendWeakSell and
      not (falseBreakoutRiskSell and sellSetupType == SETUP_BREAKOUT_BUILD) and
      not (shortExhaustion and sellIntent != INTENT_LIQUIDITY) and
      sellAlignmentScore > -0.30
 
-bool buySeedActive  = (buyPermission and buySeedCore and buySeedLocationScore >= 0.65 and buyHasPreSlAnchor) or buySeedSoft
-bool sellSeedActive = (sellPermission and sellSeedCore and sellSeedLocationScore >= 0.65 and sellHasPreSlAnchor) or sellSeedSoft
+bool buySeedActive  = (buyPermission and buySeedCore and buySeedLocationScore >= 0.55 and buyHasPreSlAnchor) or buySeedSoft
+bool sellSeedActive = (sellPermission and sellSeedCore and sellSeedLocationScore >= 0.55 and sellHasPreSlAnchor) or sellSeedSoft
 
 bool buySeedConfirmed =
      buySeedActive and
@@ -4540,7 +4540,7 @@ bool buySeedConfirmed =
          buyPremiumReady or
          buyInstitutionalRejection or
          buyConfluenceStrong or
-         buySeedLocationScore >= 1.08
+         buySeedLocationScore >= 0.92
      )
 
 bool sellSeedConfirmed =
@@ -4559,7 +4559,7 @@ bool sellSeedConfirmed =
          sellPremiumReady or
          sellInstitutionalRejection or
          sellConfluenceStrong or
-         sellSeedLocationScore >= 1.15
+         sellSeedLocationScore >= 0.98
      )
 
 bool buySeedEarly =
@@ -4644,7 +4644,7 @@ bool preBuyBase =
      buyHasPreTpAnchor and
      buyConfluenceScore >= 1.10 and
      (
-         buySeedLocationScore >= 0.95 or
+         buySeedLocationScore >= 0.81 or
          nearSupport or
          nearCurrentSessionLow or
          nearRelayLow or
@@ -4963,7 +4963,7 @@ bool buyBuildCandidate =
          buyTrapFastLane or
          (
              buyConfluenceStrong and
-             buySeedLocationScore >= 1.05 and
+             buySeedLocationScore >= 0.89 and
              (
                  buySetupType == SETUP_RECLAIM or
                  bullTrapStrict or
@@ -5522,7 +5522,7 @@ bool buyStrongPreBuild =
          buyConfluenceScoreEff >= 1.45 or
          (
              buyConfluenceStrong and
-             buySeedLocationScore >= 1.10 and
+             buySeedLocationScore >= 0.94 and
              (
                  buySetupTypeEff == SETUP_RECLAIM or
                  bullTrapStrict or
@@ -5548,7 +5548,7 @@ bool buyStrongPreBuild =
          buyFinalScoreEff >= preScoreThresholdDynamic - 0.20 or
          (
              buyConfluenceStrong and
-             buySeedLocationScore >= 1.10 and
+             buySeedLocationScore >= 0.94 and
              (
                  buySetupTypeEff == SETUP_RECLAIM or
                  bullTrapStrict or
@@ -5566,7 +5566,7 @@ bool sellStrongPreBuild =
          sellConfluenceScoreEff >= 1.45 or
          (
              sellConfluenceStrong and
-             sellSeedLocationScore >= 1.10 and
+             sellSeedLocationScore >= 0.94 and
              (
                  sellSetupTypeEff == SETUP_RECLAIM or
                  bearTrapStrict or
@@ -5592,7 +5592,7 @@ bool sellStrongPreBuild =
          sellFinalScoreEff >= preScoreThresholdDynamic - 0.20 or
          (
              sellConfluenceStrong and
-             sellSeedLocationScore >= 1.10 and
+             sellSeedLocationScore >= 0.94 and
              (
                  sellSetupTypeEff == SETUP_RECLAIM or
                  bearTrapStrict or
@@ -5608,7 +5608,7 @@ bool buyDominant =
      (
          (
              buyConfluenceStrong and
-             buySeedLocationScore >= 1.10 and
+             buySeedLocationScore >= 0.94 and
              (
                  buySetupTypeEff == SETUP_RECLAIM or
                  bullTrapStrict or
@@ -5637,7 +5637,7 @@ bool sellDominant =
      (
          (
              sellConfluenceStrong and
-             sellSeedLocationScore >= 1.10 and
+             sellSeedLocationScore >= 0.94 and
              (
                  sellSetupTypeEff == SETUP_RECLAIM or
                  bearTrapStrict or
@@ -5693,7 +5693,7 @@ bool buyBuildNow =
          buyTrapFastLane or
          (
              buyConfluenceStrong and
-             buySeedLocationScore >= 1.10 and
+             buySeedLocationScore >= 0.94 and
              (
                  buySetupTypeEff == SETUP_RECLAIM or
                  bullTrapStrict or
@@ -5733,7 +5733,7 @@ bool preBuyNow =
          strongSupportRejection or
          (
              buyConfluenceStrong and
-             buySeedLocationScore >= 1.10 and
+             buySeedLocationScore >= 0.94 and
              (
                  buySetupTypeEff == SETUP_RECLAIM or
                  bullTrapStrict or
