@@ -349,6 +349,26 @@ confFromScore(float score) =>
         c := "MED"
     c
 
+//======================================================
+// REFAKTOR #2: SCORE-NORMALISERING (logistisk)
+//------------------------------------------------------
+// Råscoren (ren riktningsdata efter #1) är en obegränsad summa vars magnitud
+// driver med regim/volatilitet. normalizeScore() mappar den genom en logistisk
+// kurva till en STABIL 0..MAX-skala: extrema signalmängder saturerar istället
+// för att skena, vilket gör grade-trösklarna regim-stabila. Defaultparametrarna
+// lägger utdata på samma talband (~0..12) som grade-trösklarna 9.0/6.8/5.4
+// redan förväntar sig, så inga nedströms-trösklar behöver ändras.
+//   MID  = råscore som mappas till mitten av skalan
+//   K    = brantheten (högre = skarpare A/B-gräns)
+//   MAX  = takvärde på normaliserad score
+//======================================================
+SCORE_NORM_MAX = input.float(12.0, "Score Norm: Max",      group="Score Normalization", minval=8.0,  maxval=20.0, step=0.5)
+SCORE_NORM_MID = input.float(5.0,  "Score Norm: Midpoint", group="Score Normalization", minval=0.0,  maxval=12.0, step=0.1)
+SCORE_NORM_K   = input.float(0.40, "Score Norm: Steepness", group="Score Normalization", minval=0.10, maxval=1.50, step=0.01)
+
+normalizeScore(float x) =>
+    SCORE_NORM_MAX / (1.0 + math.exp(-SCORE_NORM_K * (x - SCORE_NORM_MID)))
+
 intentText(int intent) =>
     string txt = "NONE"
     if intent == INTENT_REVERSAL
@@ -4283,8 +4303,13 @@ if barstate.isconfirmed
     gca -= regimeCode == REGIME_CHAOTIC and not strongSig ? 0.35 : 0.0
     gradeContextAdj := clamp(gca, -1.5, 0.7)
 
-float buyUnifiedScoreAdj  = buyUnifiedScore  + gradeContextAdj
-float sellUnifiedScoreAdj = sellUnifiedScore + gradeContextAdj
+// REFAKTOR #2: råscore (ren riktningsdata + regim-justering) -> normaliserad 0..MAX.
+// Allt nedströms (grade, conf, snapshot, eff, pads, relativa jämförelser) läser
+// den normaliserade skalan, så grade-trösklarna 9.0/6.8/5.4 är nu regim-stabila.
+float buyScoreRawAdj   = buyUnifiedScore  + gradeContextAdj
+float sellScoreRawAdj  = sellUnifiedScore + gradeContextAdj
+float buyUnifiedScoreAdj  = normalizeScore(buyScoreRawAdj)
+float sellUnifiedScoreAdj = normalizeScore(sellScoreRawAdj)
 
 string buyGrade = gradeFromScore(buyUnifiedScoreAdj)
 string sellGrade = gradeFromScore(sellUnifiedScoreAdj)
