@@ -1,5 +1,5 @@
 //@version=6
-indicator("SR Smart Entry AI PRO v3.9 Optimized Core", shorttitle="SR AI v3.9 OC", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=100, max_bars_back=300)
+strategy("SR Smart Entry AI PRO v3.9 Strategy", shorttitle="SR AI v3.9 STRAT", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=100, max_bars_back=300, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=100, commission_type=strategy.commission.percent, commission_value=0.05, slippage=2, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false)
 //======================================================
 // ERROR-FREE RESTORED PATCH VERSION
 // Based on original script only
@@ -409,6 +409,21 @@ GRP_W_MOMENTUM  = input.float(1.0, "Group: Momentum",  group="Score Group Weight
 GRP_W_STRUCTURE = input.float(1.0, "Group: Structure", group="Score Group Weights", minval=0.0, maxval=2.0, step=0.05)
 GRP_W_BIAS      = input.float(1.0, "Group: Coin-DNA",  group="Score Group Weights", minval=0.0, maxval=2.0, step=0.05)
 GRP_W_SESSION   = input.float(1.0, "Group: Session",   group="Score Group Weights", minval=0.0, maxval=2.0, step=0.05)
+
+//======================================================
+// STRATEGI (backtest) - speglar indikatorns entry/SL/TP i riktiga order
+//------------------------------------------------------
+// Order läggs bara när indikatorns egna buyTriggered/sellTriggered fyrar, och
+// stängs via setupSL (-> BE efter TP1) / setupTP3 - exakt indikatorns logik.
+// Positionsstorlek = fast risk-% av equity / (entry-SL avstånd) -> varje trade
+// riskerar lika mycket, vilket är rätt sätt att mäta edge.
+//======================================================
+STRAT_ENABLE   = input.bool(true,  "Aktivera strategi-order", group="Strategy")
+STRAT_RISK_PCT = input.float(1.0,  "Risk per trade (% av equity)", group="Strategy", minval=0.1, maxval=10.0, step=0.1)
+STRAT_LONGS    = input.bool(true,  "Tillåt long", group="Strategy")
+STRAT_SHORTS   = input.bool(true,  "Tillåt short", group="Strategy")
+STRAT_FROM     = input.time(timestamp("2020-01-01"), "Backtest från", group="Strategy")
+STRAT_TO       = input.time(timestamp("2099-01-01"), "Backtest till", group="Strategy")
 
 intentText(int intent) =>
     string txt = "NONE"
@@ -6822,6 +6837,12 @@ if buyTriggered
         label.set_color(sigLbl, d3_signalColorBySideAndScore(SIDE_BUY, setupScore))
     if not na(infoLbl)
         label.set_text(infoLbl, d3_buildInfoText(SIDE_BUY, STATUS_ACTIVE))
+    // STRATEGI: long-entry (risk-normaliserad storlek = risk% / entry-SL avstånd, tak 1x equity)
+    if STRAT_ENABLE and STRAT_LONGS and time >= STRAT_FROM and time <= STRAT_TO and not na(setupEntry) and not na(setupSL)
+        float rUnitL = math.max(setupEntry - setupSL, syminfo.mintick)
+        float wantUnitsL = (strategy.equity * STRAT_RISK_PCT / 100.0) / rUnitL
+        float maxUnitsL  = strategy.equity / math.max(setupEntry, syminfo.mintick)
+        strategy.entry("Long", strategy.long, qty=math.min(wantUnitsL, maxUnitsL))
 
 if sellTriggered
     tradeActive := true
@@ -6832,6 +6853,12 @@ if sellTriggered
         label.set_color(sigLbl, d3_signalColorBySideAndScore(SIDE_SELL, setupScore))
     if not na(infoLbl)
         label.set_text(infoLbl, d3_buildInfoText(SIDE_SELL, STATUS_ACTIVE))
+    // STRATEGI: short-entry (risk-normaliserad storlek = risk% / entry-SL avstånd, tak 1x equity)
+    if STRAT_ENABLE and STRAT_SHORTS and time >= STRAT_FROM and time <= STRAT_TO and not na(setupEntry) and not na(setupSL)
+        float rUnitS = math.max(setupSL - setupEntry, syminfo.mintick)
+        float wantUnitsS = (strategy.equity * STRAT_RISK_PCT / 100.0) / rUnitS
+        float maxUnitsS  = strategy.equity / math.max(setupEntry, syminfo.mintick)
+        strategy.entry("Short", strategy.short, qty=math.min(wantUnitsS, maxUnitsS))
 
 //======================================================
 // TRADE MANAGEMENT
@@ -6924,6 +6951,15 @@ if tradeActive
         if sellStopNow
             closeTradeNow := true
 
+// STRATEGI: skyddande bracket (stop=setupSL inkl BE-flytt, limit=setupTP3).
+// Placeras medan position är öppen och setupSL/TP är giltiga (före reset nedan).
+// Broker-emulatorn fyller intrabar på exakt SL/TP -> realistisk exit.
+if STRAT_ENABLE
+    if strategy.position_size > 0 and not na(setupSL)
+        strategy.exit("xL", from_entry="Long", stop=setupSL, limit=setupTP3)
+    if strategy.position_size < 0 and not na(setupSL)
+        strategy.exit("xS", from_entry="Short", stop=setupSL, limit=setupTP3)
+
 if closeTradeNow
     d3_clearVisuals()
 
@@ -6971,6 +7007,12 @@ if closeTradeNow
     setupMarginLossPct := na
     setupNotionalRisk := na
     setupBEOffsetR := 0.0
+
+// STRATEGI säkerhets-sync: indikatorn flat men strategin har kvar en position
+// (tids-stop ACTIVE_MAX_BARS eller annan kill-path som inte träffade SL/TP)
+// -> stäng på marknaden. Vid normal SL/TP-exit har bracketen redan stängt (no-op).
+if STRAT_ENABLE and not tradeActive and not closeTradeNow and strategy.position_size != 0
+    strategy.close_all(comment="sync-exit")
 
 //======================================================
 // FOLLOW RIGHT
