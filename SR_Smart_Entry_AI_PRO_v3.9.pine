@@ -4117,15 +4117,8 @@ d2_calcBuyContextScore(int buyIntent_, bool buyPermission_) =>
     s += buyIntent_ == INTENT_EXPANSION ? 0.6 : 0.0
     s += buyIntent_ == INTENT_LIQUIDITY ? 0.5 : 0.0
     s += supportZoneQuality >= 2.8 ? 0.45 : supportZoneQuality >= 1.6 ? 0.15 : -0.05
-    // REFAKTOR #3: korrelerat location-kluster med avtagande effekt (var rak summa 0.28+0.24+0.24)
-    s += dimSum3(nearCurrentSessionLow ? 0.28 : 0.0, nearRelayLow ? 0.24 : 0.0, nearTrueLowerPool ? 0.24 : 0.0)
-    s += sessionReclaimBuyRef ? 0.26 : 0.0
-    s += sessionBreakoutPressureBuyRef ? 0.18 : 0.0
-    s += smartBreakoutReadyBuy ? 0.42 : 0.0
-    s += buyBreakAntEarly and not smartBreakoutReadyBuy ? 0.22 : 0.0
-    s += strongSupportRejection ? 0.38 : 0.0
-    s += buyInstitutionalRejection ? 0.55 : 0.0
-    s += buyReclaimHighQuality ? 0.18 : 0.0
+    // #4: sessionLow/relayLow finns redan i base location-klustret -> bara unik truePool kvar i context
+    s += nearTrueLowerPool ? 0.24 : 0.0
     s += regimeCode == REGIME_TREND_UP and close >= emaFast ? 0.25 : 0.0
     s += regimeCode == REGIME_TREND_UP and supportZoneQuality >= 1.6 ? 0.20 : 0.0
     s += coinProfileCode == COIN_PROFILE_TREND ? 0.18 : 0.0
@@ -4134,19 +4127,13 @@ d2_calcBuyContextScore(int buyIntent_, bool buyPermission_) =>
     s += coinCrowdedMarket ? -0.18 : 0.0
     s += coinVeryCrowdedMarket ? -0.22 : 0.0
     s += longExhaustion ? -0.6 : 0.0
-    s += tcBuyStrict ? 0.35 : 0.0
     s += bullBos ? 0.35 : 0.0
-    s += bullChoch ? 0.30 : 0.0
-    s += marketMemoryBias == 1 ? 0.30 : 0.0
     s += microRangeActive and buyIntent_ != INTENT_LIQUIDITY ? -0.20 : 0.0
     s += coinDnaCode == COIN_DNA_MEAN_REVERTER and buyIntent_ == INTENT_CONTINUATION ? -0.18 : 0.0
     s += preSweepBias == -1 and buyIntent_ == INTENT_LIQUIDITY ? 0.20 : 0.0
     s += preSweepBias == 1 and buyIntent_ != INTENT_LIQUIDITY ? -0.22 : 0.0
     s += marketStructureProxy == 1 ? 0.25 : 0.0
     s += htfProxyBias == 1 ? 0.35 : 0.0
-    s += coinDnaCode == COIN_DNA_TREND_DRIVER ? 0.18 : 0.0
-    s += coinDnaCode == COIN_DNA_LIQUIDITY_HUNTER and buyIntent_ == INTENT_LIQUIDITY ? 0.15 : 0.0
-    s += volatilityExpansionReady ? 0.18 : 0.0
     s += getContextPreSweepPrimary(SIDE_BUY, preSweepBias, buyIntent_)
     s += getWhaleContextBonus(SIDE_BUY)
     s += getFalseBreakContextPenalty(SIDE_BUY)
@@ -4167,15 +4154,8 @@ d2_calcSellContextScore(int sellIntent_, bool sellPermission_) =>
     s += sellIntent_ == INTENT_EXPANSION ? 0.6 : 0.0
     s += sellIntent_ == INTENT_LIQUIDITY ? 0.5 : 0.0
     s += resistanceZoneQuality >= 2.8 ? 0.45 : resistanceZoneQuality >= 1.6 ? 0.15 : -0.05
-    // REFAKTOR #3: korrelerat location-kluster med avtagande effekt (var rak summa 0.28+0.24+0.24)
-    s += dimSum3(nearCurrentSessionHigh ? 0.28 : 0.0, nearRelayHigh ? 0.24 : 0.0, nearTrueUpperPool ? 0.24 : 0.0)
-    s += sessionReclaimSellRef ? 0.26 : 0.0
-    s += sessionBreakoutPressureSellRef ? 0.18 : 0.0
-    s += smartBreakdownReadySell ? 0.42 : 0.0
-    s += sellBreakAntEarly and not smartBreakdownReadySell ? 0.22 : 0.0
-    s += strongResistanceRejection ? 0.38 : 0.0
-    s += sellInstitutionalRejection ? 0.55 : 0.0
-    s += sellReclaimHighQuality ? 0.18 : 0.0
+    // #4: sessionHigh/relayHigh finns redan i base location-klustret -> bara unik upperPool kvar i context
+    s += nearTrueUpperPool ? 0.24 : 0.0
     s += regimeCode == REGIME_TREND_DOWN and close <= emaFast ? 0.25 : 0.0
     s += regimeCode == REGIME_TREND_DOWN and resistanceZoneQuality >= 1.6 ? 0.20 : 0.0
     s += coinProfileCode == COIN_PROFILE_TREND ? 0.18 : 0.0
@@ -4184,19 +4164,13 @@ d2_calcSellContextScore(int sellIntent_, bool sellPermission_) =>
     s += coinCrowdedMarket ? -0.18 : 0.0
     s += coinVeryCrowdedMarket ? -0.22 : 0.0
     s += shortExhaustion ? -0.6 : 0.0
-    s += tcSellStrict ? 0.35 : 0.0
     s += bearBos ? 0.35 : 0.0
-    s += bearChoch ? 0.30 : 0.0
-    s += marketMemoryBias == -1 ? 0.30 : 0.0
     s += microRangeActive and sellIntent_ != INTENT_LIQUIDITY ? -0.20 : 0.0
     s += coinDnaCode == COIN_DNA_MEAN_REVERTER and sellIntent_ == INTENT_CONTINUATION ? -0.18 : 0.0
     s += preSweepBias == 1 and sellIntent_ == INTENT_LIQUIDITY ? 0.20 : 0.0
     s += preSweepBias == -1 and sellIntent_ != INTENT_LIQUIDITY ? -0.22 : 0.0
     s += marketStructureProxy == -1 ? 0.25 : 0.0
     s += htfProxyBias == -1 ? 0.35 : 0.0
-    s += coinDnaCode == COIN_DNA_TREND_DRIVER ? 0.18 : 0.0
-    s += coinDnaCode == COIN_DNA_LIQUIDITY_HUNTER and sellIntent_ == INTENT_LIQUIDITY ? 0.15 : 0.0
-    s += volatilityExpansionReady ? 0.18 : 0.0
     s += getContextPreSweepPrimary(SIDE_SELL, preSweepBias, sellIntent_)
     s += getWhaleContextBonus(SIDE_SELL)
     s += getFalseBreakContextPenalty(SIDE_SELL)
