@@ -424,6 +424,8 @@ STRAT_LONGS    = input.bool(true,  "Tillåt long", group="Strategy")
 STRAT_SHORTS   = input.bool(true,  "Tillåt short", group="Strategy")
 STRAT_TP1_PCT  = input.float(50, "Stäng % vid TP1", group="Strategy", minval=0, maxval=100, step=5)
 STRAT_TP2_PCT  = input.float(50, "Stäng % av resten vid TP2", group="Strategy", minval=0, maxval=100, step=5)
+STRAT_MIN_GRADE = input.string("B", "Minsta grade att handla", options=["B","A","A+"], group="Strategy", tooltip="Testa A eller A+ för att se om score-motorn rankar rätt (har edge i toppen).")
+STRAT_MIN_SCORE = input.float(0.0, "Minsta score att handla", group="Strategy", minval=0.0, maxval=12.0, step=0.5)
 
 intentText(int intent) =>
     string txt = "NONE"
@@ -6766,7 +6768,8 @@ if sellTriggered
 // STRATEGI ENTRY: limit/stop-order vid setupEntry medan setup är PENDING -> fylls
 // på exakt nivån (limit för pullback, stop för breakout), inte chasing vid close.
 // Storlek = risk% / (entry-SL avstånd), tak 1x equity.
-if STRAT_ENABLE and pendingActive and not tradeActive and strategy.position_size == 0 and not na(setupEntry) and not na(setupSL)
+bool stratGradeOk = STRAT_MIN_GRADE == "B" or (STRAT_MIN_GRADE == "A" and (setupGrade == "A" or setupGrade == "A+")) or (STRAT_MIN_GRADE == "A+" and setupGrade == "A+")
+if STRAT_ENABLE and pendingActive and not tradeActive and strategy.position_size == 0 and stratGradeOk and nz(setupScore, 0.0) >= STRAT_MIN_SCORE and not na(setupEntry) and not na(setupSL)
     if setupSide == SIDE_BUY and STRAT_LONGS
         float rUL = math.max(setupEntry - setupSL, syminfo.mintick)
         float qL = math.min((strategy.equity * STRAT_RISK_PCT / 100.0) / rUL, strategy.equity / math.max(setupEntry, syminfo.mintick))
