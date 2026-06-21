@@ -6752,12 +6752,6 @@ if buyTriggered
         label.set_color(sigLbl, d3_signalColorBySideAndScore(SIDE_BUY, setupScore))
     if not na(infoLbl)
         label.set_text(infoLbl, d3_buildInfoText(SIDE_BUY, STATUS_ACTIVE))
-    // STRATEGI: long-entry (risk-normaliserad storlek = risk% / entry-SL avstånd, tak 1x equity)
-    if STRAT_ENABLE and STRAT_LONGS and not na(setupEntry) and not na(setupSL)
-        float rUnitL = math.max(setupEntry - setupSL, syminfo.mintick)
-        float wantUnitsL = (strategy.equity * STRAT_RISK_PCT / 100.0) / rUnitL
-        float maxUnitsL  = strategy.equity / math.max(setupEntry, syminfo.mintick)
-        strategy.entry("Long", strategy.long, qty=math.min(wantUnitsL, maxUnitsL))
 
 if sellTriggered
     tradeActive := true
@@ -6768,12 +6762,23 @@ if sellTriggered
         label.set_color(sigLbl, d3_signalColorBySideAndScore(SIDE_SELL, setupScore))
     if not na(infoLbl)
         label.set_text(infoLbl, d3_buildInfoText(SIDE_SELL, STATUS_ACTIVE))
-    // STRATEGI: short-entry (risk-normaliserad storlek = risk% / entry-SL avstånd, tak 1x equity)
-    if STRAT_ENABLE and STRAT_SHORTS and not na(setupEntry) and not na(setupSL)
-        float rUnitS = math.max(setupSL - setupEntry, syminfo.mintick)
-        float wantUnitsS = (strategy.equity * STRAT_RISK_PCT / 100.0) / rUnitS
-        float maxUnitsS  = strategy.equity / math.max(setupEntry, syminfo.mintick)
-        strategy.entry("Short", strategy.short, qty=math.min(wantUnitsS, maxUnitsS))
+
+// STRATEGI ENTRY: limit/stop-order vid setupEntry medan setup är PENDING -> fylls
+// på exakt nivån (limit för pullback, stop för breakout), inte chasing vid close.
+// Storlek = risk% / (entry-SL avstånd), tak 1x equity.
+if STRAT_ENABLE and pendingActive and not tradeActive and strategy.position_size == 0 and not na(setupEntry) and not na(setupSL)
+    if setupSide == SIDE_BUY and STRAT_LONGS
+        float rUL = math.max(setupEntry - setupSL, syminfo.mintick)
+        float qL = math.min((strategy.equity * STRAT_RISK_PCT / 100.0) / rUL, strategy.equity / math.max(setupEntry, syminfo.mintick))
+        strategy.entry("Long", strategy.long, limit=setupEntry < close ? setupEntry : na, stop=setupEntry > close ? setupEntry : na, qty=qL)
+    else if setupSide == SIDE_SELL and STRAT_SHORTS
+        float rUS = math.max(setupSL - setupEntry, syminfo.mintick)
+        float qS = math.min((strategy.equity * STRAT_RISK_PCT / 100.0) / rUS, strategy.equity / math.max(setupEntry, syminfo.mintick))
+        strategy.entry("Short", strategy.short, limit=setupEntry > close ? setupEntry : na, stop=setupEntry < close ? setupEntry : na, qty=qS)
+// avbryt vilande entry-order om setupen dog utan fyllning
+if STRAT_ENABLE and not pendingActive and not tradeActive and strategy.position_size == 0
+    strategy.cancel("Long")
+    strategy.cancel("Short")
 
 //======================================================
 // TRADE MANAGEMENT
