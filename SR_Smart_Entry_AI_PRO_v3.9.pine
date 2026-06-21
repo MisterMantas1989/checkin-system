@@ -422,8 +422,6 @@ STRAT_ENABLE   = input.bool(true,  "Aktivera strategi-order", group="Strategy")
 STRAT_RISK_PCT = input.float(1.0,  "Risk per trade (% av equity)", group="Strategy", minval=0.1, maxval=10.0, step=0.1)
 STRAT_LONGS    = input.bool(true,  "Tillåt long", group="Strategy")
 STRAT_SHORTS   = input.bool(true,  "Tillåt short", group="Strategy")
-STRAT_FROM     = input.time(timestamp("2020-01-01"), "Backtest från", group="Strategy")
-STRAT_TO       = input.time(timestamp("2099-01-01"), "Backtest till", group="Strategy")
 
 intentText(int intent) =>
     string txt = "NONE"
@@ -473,14 +471,6 @@ coinProfileText(int profile) =>
         txt := "EXPLOSIVE"
     txt
 
-marketStructureText(int state) =>
-    string txt = "NEUTRAL"
-    if state == 1
-        txt := "BULLISH"
-    else if state == -1
-        txt := "BEARISH"
-    txt
-
 coinDnaText(int dna) =>
     string txt = "HYBRID"
     if dna == COIN_DNA_TREND_DRIVER
@@ -504,14 +494,6 @@ dnaCodeFromProfile(int profile) =>
     else if profile == COIN_PROFILE_EXPLOSIVE
         dna := COIN_DNA_MOMENTUM_EXPLOSIVE
     dna
-
-preSweepText(int bias) =>
-    string txt = "NONE"
-    if bias == 1
-        txt := "UP"
-    else if bias == -1
-        txt := "DOWN"
-    txt
 
 
 d1_zoneMid(float zTop, float zBottom) =>
@@ -2368,8 +2350,6 @@ plotshape(v2TrigBuy,    title="V2 Trigger Buy",  style=shape.triangleup,   locat
 plotshape(v2PrimedSell, title="V2 Primed Sell",  style=shape.circle,       location=location.abovebar, color=color.new(color.orange, 0), size=size.tiny)
 plotshape(v2TrigSell,   title="V2 Trigger Sell", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),    size=size.small)
 
-alertcondition(v2TrigBuy,  title="BO V2 Trigger Long",  message="Breakout V2 confirmed LONG")
-alertcondition(v2TrigSell, title="BO V2 Trigger Short", message="Breakout V2 confirmed SHORT")
 
 //======================================================
 // DEL 1 TELEMETRY / BRIDGE FOR DEL 2 + DEL 3
@@ -2517,32 +2497,6 @@ d2_isBuy(int side) =>
 
 d2_clamp(float v, float lo, float hi) =>
     math.max(lo, math.min(hi, v))
-
-liquidityPathText(int pathBias, float pathStrength) =>
-    string txt = "NEUTRAL"
-    if pathBias == -1
-        txt := pathStrength >= LIQ_PATH_STRONG_TH + 0.8 ? "UP STRONG" : "UP"
-    else if pathBias == 1
-        txt := pathStrength >= LIQ_PATH_STRONG_TH + 0.8 ? "DOWN STRONG" : "DOWN"
-    txt
-
-whaleText(int wb) =>
-    string txt = "NONE"
-    if wb == 1
-        txt := "BULL"
-    else if wb == -1
-        txt := "BEAR"
-    txt
-
-falseBreakoutText(bool buyRisk, bool sellRisk) =>
-    string txt = "OFF"
-    if buyRisk and not sellRisk
-        txt := "BUY RISK"
-    else if sellRisk and not buyRisk
-        txt := "SELL RISK"
-    else if buyRisk and sellRisk
-        txt := "BOTH"
-    txt
 
 statusTextMain(int s) =>
     string txt = "NONE"
@@ -5432,12 +5386,6 @@ d3_confluenceTextBySide(int side, float v) =>
 d3_confText(int side) =>
     d3_confluenceTextBySide(side, side == SIDE_BUY ? buyConfluenceScoreEff : sellConfluenceScoreEff)
 
-d3_confScore(int side) =>
-    side == SIDE_BUY ? buyConfluenceScoreEff : sellConfluenceScoreEff
-
-d3_aiText(int side) =>
-    side == SIDE_BUY ? buyConfEff : sellConfEff
-
 d3_clearVisuals() =>
     clearLine(entryLine)
     clearLine(slLine)
@@ -5453,59 +5401,24 @@ d3_clearVisuals() =>
     clearLabel(tp3Lbl)
 
 d3_buildInfoText(int side, int state) =>
-    string txt = ""
-    txt := "State: " + statusTextMain(state)
-    txt += " | Side: " + (side == SIDE_BUY ? "BUY" : "SELL")
-    txt += " | Type: " + setupTypeTxt
-    txt += " | Intent: " + setupIntentTxt
-    txt += " | Regime: " + setupRegimeTxt
-    txt += " | Zone: " + setupZoneTxt
-    txt += " | Score: " + str.tostring(setupScore, "#.0")
-    txt += " | Confl: " + d3_confText(side) + " " + str.tostring(d3_confScore(side), "#.1")
-    txt += " | AI: " + d3_aiText(side)
-    txt += " | Sync: " + str.tostring(side == SIDE_BUY ? buyEngineAgreement : sellEngineAgreement, "#.2")
-    txt += " | Lev: " + (na(setupLev) ? "na" : str.tostring(setupLev, "#.0"))
-    txt += " | Risk%: " + (na(setupRiskPct) ? "na" : str.tostring(setupRiskPct, "#.00"))
-    txt += " | MLoss%: " + (na(setupMarginLossPct) ? "na" : str.tostring(setupMarginLossPct, "#.0"))
-    txt += " | Coin: " + coinProfileText(coinProfileCode)
-    txt += " | DNA: " + coinDnaText(coinDnaCode)
-    txt += " | Struct: " + marketStructureText(marketMemoryBias)
-    txt += " | HTF: " + marketStructureText(htfStructureBias)
-    txt += " | Path: " + liquidityPathText(liquidityPathBias, liquidityPathStrength)
-    txt += " | Whale: " + whaleText(whaleBias)
-    txt += " | FB: " + falseBreakoutText(falseBreakoutRiskBuy, falseBreakoutRiskSell)
+    string txt = "State: " + statusTextMain(state)
+    txt += " | " + (side == SIDE_BUY ? "BUY" : "SELL")
+    txt += " | " + setupTypeTxt
+    txt += " | " + setupRegimeTxt
+    txt += " | Score " + str.tostring(setupScore, "#.0")
+    txt += " | Confl " + d3_confText(side)
+    txt += " | Lev " + (na(setupLev) ? "na" : str.tostring(setupLev, "#.0"))
+    txt += " | Risk% " + (na(setupRiskPct) ? "na" : str.tostring(setupRiskPct, "#.00"))
     txt
 
 d3_buildRegimeInfoText() =>
-    string txt = ""
-    txt := "Regime: " + regimeText(regimeCode) + " " + str.tostring(regimeConfidence, "#.2")
+    string txt = "Regime: " + regimeText(regimeCode) + " " + str.tostring(regimeConfidence, "#.2")
     txt += " | Bias: " + (trendUpBasic ? "UP" : trendDownBasic ? "DOWN" : "NEUTRAL")
     txt += " | Session: " + currentSessionNameRef
-    txt += " | Relay: " + (relaySource == "" ? "NONE" : relaySource + " H/L")
-    txt += " | Liq B " + str.tostring(liquidityScoreBuy, "#.1")
-    txt += " | Liq S " + str.tostring(liquidityScoreSell, "#.1")
     txt += " | State " + statusTextMain(setupStatus)
     txt += " | Type " + setupTypeTxt
-    txt += " | Lev " + (na(setupLev) ? "na" : str.tostring(setupLev, "#.0"))
-    txt += " | Risk% " + (na(setupRiskPct) ? "na" : str.tostring(setupRiskPct, "#.00"))
-    txt += " | MLoss% " + (na(setupMarginLossPct) ? "na" : str.tostring(setupMarginLossPct, "#.0"))
-    txt += " | Space " + str.tostring(adaptiveSpaceMult, "#.00")
     txt += " | Coin " + coinProfileText(coinProfileCode)
     txt += " | DNA " + coinDnaText(coinDnaCode)
-    txt += " | Struct " + marketStructureText(marketMemoryBias)
-    txt += " | HTF " + marketStructureText(htfStructureBias)
-    txt += " | Crowd " + str.tostring(zoneCrowdingScore, "#.0")
-    txt += " | Regime " + regimeText(regimeCode) + " conf " + str.tostring(regimeConfidence, "#.1")
-    txt += " | Micro " + (microRangeActive ? "ON" : "OFF")
-    txt += " | VolExp " + (volatilityExpansionReady ? "READY" : "OFF") + " " + str.tostring(volExpScore, "#.1")
-    txt += " | PreSweep " + preSweepText(preSweepBias) + " | VWAP " + str.tostring(sessionVwap, format.mintick) + (priceAboveVwap ? " ^" : priceBelowVwap ? " v" : " =")
-    txt += " | Path " + liquidityPathText(liquidityPathBias, liquidityPathStrength)
-    txt += " | Whale " + whaleText(whaleBias)
-    txt += " | FB " + falseBreakoutText(falseBreakoutRiskBuy, falseBreakoutRiskSell)
-    txt += " | SessBias " + sessionBiasText(sessionBiasEff) + " " + str.tostring(sessionBiasEff, "#.2")
-    txt += " | Confl B " + d3_confText(SIDE_BUY) + " " + str.tostring(buyConfluenceScoreEff, "#.1")
-    txt += " | Confl S " + d3_confText(SIDE_SELL) + " " + str.tostring(sellConfluenceScoreEff, "#.1")
-    txt += " | AI B " + buyConfEff + " | AI S " + sellConfEff
     txt
 
 //======================================================
@@ -6838,7 +6751,7 @@ if buyTriggered
     if not na(infoLbl)
         label.set_text(infoLbl, d3_buildInfoText(SIDE_BUY, STATUS_ACTIVE))
     // STRATEGI: long-entry (risk-normaliserad storlek = risk% / entry-SL avstånd, tak 1x equity)
-    if STRAT_ENABLE and STRAT_LONGS and time >= STRAT_FROM and time <= STRAT_TO and not na(setupEntry) and not na(setupSL)
+    if STRAT_ENABLE and STRAT_LONGS and not na(setupEntry) and not na(setupSL)
         float rUnitL = math.max(setupEntry - setupSL, syminfo.mintick)
         float wantUnitsL = (strategy.equity * STRAT_RISK_PCT / 100.0) / rUnitL
         float maxUnitsL  = strategy.equity / math.max(setupEntry, syminfo.mintick)
@@ -6854,7 +6767,7 @@ if sellTriggered
     if not na(infoLbl)
         label.set_text(infoLbl, d3_buildInfoText(SIDE_SELL, STATUS_ACTIVE))
     // STRATEGI: short-entry (risk-normaliserad storlek = risk% / entry-SL avstånd, tak 1x equity)
-    if STRAT_ENABLE and STRAT_SHORTS and time >= STRAT_FROM and time <= STRAT_TO and not na(setupEntry) and not na(setupSL)
+    if STRAT_ENABLE and STRAT_SHORTS and not na(setupEntry) and not na(setupSL)
         float rUnitS = math.max(setupSL - setupEntry, syminfo.mintick)
         float wantUnitsS = (strategy.equity * STRAT_RISK_PCT / 100.0) / rUnitS
         float maxUnitsS  = strategy.equity / math.max(setupEntry, syminfo.mintick)
@@ -7093,31 +7006,8 @@ bgcolor(microRangeActive ? color.new(color.yellow, 92) : na, title="Micro Range 
 //======================================================
 // ALERTS
 //======================================================
-alertcondition(buyTriggered, title="BUY ACTIVE", message="BUY setup triggered")
-alertcondition(sellTriggered, title="SELL ACTIVE", message="SELL setup triggered")
-alertcondition(preBuyNow, title="PRE BUY", message="PRE BUY detected")
-alertcondition(preSellNow, title="PRE SELL", message="PRE SELL detected")
-alertcondition(showLmBuyStrong, title="LM BUY", message="Elite LM BUY detected")
-alertcondition(showLmSellStrong, title="LM SELL", message="Elite LM SELL detected")
 
-alertcondition(lsBuyStrict, title="Liquidity Sweep Buy", message="Bullish liquidity sweep detected")
-alertcondition(lsSellStrict, title="Liquidity Sweep Sell", message="Bearish liquidity sweep detected")
-alertcondition(bullTrapStrict or bullTrapEarly, title="Bull Trap", message="Bull trap detected (check chart for early vs confirmed)")
-alertcondition(bearTrapStrict or bearTrapEarly, title="Bear Trap", message="Bear trap detected (check chart for early vs confirmed)")
-alertcondition(tcBuyStrict, title="Trend Continuation Buy", message="Trend continuation buy detected")
-alertcondition(tcSellStrict, title="Trend Continuation Sell", message="Trend continuation sell detected")
 
-alertcondition(sessionReclaimBuyRef or sessionBreakoutPressureBuyRef, title="SESSION BUY SIGNAL", message="Session reclaim or breakout build buy detected")
-alertcondition(sessionReclaimSellRef or sessionBreakoutPressureSellRef, title="SESSION SELL SIGNAL", message="Session reclaim or breakout build sell detected")
 
-alertcondition(strongSupportRejection, title="STRONG SUPPORT REJECTION", message="Strong bullish rejection from support detected")
-alertcondition(strongResistanceRejection, title="STRONG RESISTANCE REJECTION", message="Strong bearish rejection from resistance detected")
 
-alertcondition(ENABLE_WHALE_VOLUME_ENGINE and (whaleBullEvent or whaleAbsorptionBuy), title="WHALE BULL", message="Whale bull activity detected")
-alertcondition(ENABLE_WHALE_VOLUME_ENGINE and (whaleBearEvent or whaleAbsorptionSell), title="WHALE BEAR", message="Whale bear activity detected")
 
-alertcondition(showLpBuyStrong or (ENABLE_SESSION_BIAS_ENGINE and sessionBiasScore >= 0.85) or (ENABLE_CONFLUENCE_ENGINE and buyConfluenceStrong), title="BUY CONFLUENCE SIGNAL", message="Strong buy: LP/Session Bias/Confluence active")
-alertcondition(showLpSellStrong or (ENABLE_SESSION_BIAS_ENGINE and sessionBiasScore <= -0.85) or (ENABLE_CONFLUENCE_ENGINE and sellConfluenceStrong), title="SELL CONFLUENCE SIGNAL", message="Strong sell: LP/Session Bias/Confluence active")
-
-alertcondition(ENABLE_FALSE_BREAKOUT_FILTER and (falseBreakoutRiskBuy or falseBreakoutRiskSell), title="FALSE BREAKOUT RISK", message="High false breakout risk detected - check direction on chart")
-alertcondition(preSweepBias != 0 or volatilityExpansionReady, title="MARKET CONDITION ALERT", message="Pre-sweep bias or volatility expansion detected")
