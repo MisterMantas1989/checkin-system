@@ -373,8 +373,19 @@ SCORE_NORM_MAX = input.float(12.0, "Score Norm: Max",      group="Score Normaliz
 SCORE_NORM_MID = input.float(5.0,  "Score Norm: Midpoint", group="Score Normalization", minval=0.0,  maxval=12.0, step=0.1)
 SCORE_NORM_K   = input.float(0.40, "Score Norm: Steepness", group="Score Normalization", minval=0.10, maxval=1.50, step=0.01)
 
-normalizeScore(float x) =>
-    SCORE_NORM_MAX / (1.0 + math.exp(-SCORE_NORM_K * (x - SCORE_NORM_MID)))
+// REFAKTOR A: AUTO-ADAPTIV normalisering per coin/marknad.
+// Istället för en fast Midpoint centreras grade-skalan på coinens EGEN rullande
+// score-fördelning (z-score-ankrad): neutralpunkten = snitt + SIGMA*std över de
+// senaste NORM_ADAPT_LEN barerna, och brantheten skalas mot coinens score-
+// spridning. Då betyder "A+" alltid "exceptionellt FÖR DEN HÄR coinen i DENNA
+// marknad" - ingen manuell Midpoint-tuning per symbol. Stäng av för fast skala.
+SCORE_NORM_ADAPTIVE = input.bool(true, "Adaptiv normalisering (per coin)", group="Score Normalization", tooltip="ON = grade-skalan självkalibrerar mot coinens egen score-fördelning. OFF = använd fasta Midpoint/Steepness ovan.")
+NORM_ADAPT_LEN     = input.int(200, "Adaptiv: lookback (barer)", group="Score Normalization", minval=30, maxval=1000)
+NORM_ADAPT_SIGMA   = input.float(1.0, "Adaptiv: neutralpunkt (std över snitt)", group="Score Normalization", minval=0.0, maxval=3.0, step=0.1)
+NORM_ADAPT_REF_STD = input.float(2.0, "Adaptiv: referens-spridning", group="Score Normalization", minval=0.5, maxval=6.0, step=0.1, tooltip="Brantheten skalas REF_STD/coinens_std -> jämn grade-spridning oavsett hur volatil scoren är på coinen.")
+
+normalizeScore(float x, float mid, float k) =>
+    SCORE_NORM_MAX / (1.0 + math.exp(-k * (x - mid)))
 
 // REFAKTOR #3: avtagande effekt för KORRELERADE signaler.
 // När flera signaler som mäter "samma sak" (t.ex. price vid en låg-nivå) triggar
@@ -4336,8 +4347,19 @@ if barstate.isconfirmed
 // den normaliserade skalan, så grade-trösklarna 9.0/6.8/5.4 är nu regim-stabila.
 float buyScoreRawAdj   = buyUnifiedScore  + gradeContextAdj
 float sellScoreRawAdj  = sellUnifiedScore + gradeContextAdj
-float buyUnifiedScoreAdj  = normalizeScore(buyScoreRawAdj)
-float sellUnifiedScoreAdj = normalizeScore(sellScoreRawAdj)
+
+// REFAKTOR A: auto-adaptiv neutralpunkt/branthet utifrån coinens egen score-fördelning.
+// repScoreNorm = den starkaste sidans råscore per bar (representerar "setup-kvalitet").
+float repScoreNorm = math.max(buyScoreRawAdj, sellScoreRawAdj)
+float adaptMean = ta.sma(repScoreNorm, NORM_ADAPT_LEN)
+float adaptStd  = ta.stdev(repScoreNorm, NORM_ADAPT_LEN)
+bool  normAdaptOn = SCORE_NORM_ADAPTIVE and bar_index >= NORM_ADAPT_LEN and not na(adaptMean) and not na(adaptStd)
+// neutralpunkt = coinens snitt + SIGMA*std (A+ = klart över coinens normala)
+float effNormMid = normAdaptOn ? adaptMean + NORM_ADAPT_SIGMA * adaptStd : SCORE_NORM_MID
+// branthet skalas mot coinens spridning -> jämn grade-fördelning oavsett score-volatilitet
+float effNormK   = normAdaptOn and adaptStd > 0.1 ? clamp(SCORE_NORM_K * (NORM_ADAPT_REF_STD / adaptStd), SCORE_NORM_K * 0.30, SCORE_NORM_K * 3.0) : SCORE_NORM_K
+float buyUnifiedScoreAdj  = normalizeScore(buyScoreRawAdj, effNormMid, effNormK)
+float sellUnifiedScoreAdj = normalizeScore(sellScoreRawAdj, effNormMid, effNormK)
 
 string buyGrade = gradeFromScore(buyUnifiedScoreAdj)
 string sellGrade = gradeFromScore(sellUnifiedScoreAdj)
