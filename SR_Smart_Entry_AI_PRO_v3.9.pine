@@ -3748,11 +3748,8 @@ bool sellConfluenceReady = sellConfluenceScore >= sellConfluenceReadyThEff
 bool buyConfluenceStrong  = buyConfluenceScore >= buyConfluenceStrongThEff
 bool sellConfluenceStrong = sellConfluenceScore >= sellConfluenceStrongThEff
 
-getConfluenceScoreBonus(int side) =>
-    d2_isBuy(side) ? buyConfluenceScore * (CONFLUENCE_SCORE_MULT + math.max(buyEngineAgreement, 0.0) * 0.010) : sellConfluenceScore * (CONFLUENCE_SCORE_MULT + math.max(sellEngineAgreement, 0.0) * 0.010)
-
-getConfluenceContextBonus(int side) =>
-    d2_isBuy(side) ? buyConfluenceScore * (CONFLUENCE_CONTEXT_MULT + math.max(buyEngineAgreement, 0.0) * 0.008) : sellConfluenceScore * (CONFLUENCE_CONTEXT_MULT + math.max(sellEngineAgreement, 0.0) * 0.008)
+// REFAKTOR-städning: getConfluenceScoreBonus/getConfluenceContextBonus borttagna
+// (oanvända efter att Confluence flyttats till QualityScore).
 
 //======================================================
 // PREMIUM QUALITY ENGINE
@@ -3916,7 +3913,7 @@ if barstate.isconfirmed
 //======================================================
 // BASE SCORE - BUY
 //======================================================
-d2_calcBuyScore(int buySetupType_, int buyIntent_, float cbReversalBias_, float cbBreakoutBias_, float buyPremiumQuality_, bool buyConfluenceStrong_, bool buyConfluenceReady_, bool buyPermission_) =>
+d2_calcBuyScore(int buySetupType_, int buyIntent_, float cbReversalBias_, float cbBreakoutBias_, bool buyPermission_) =>
     float s = 0.0
     s += bullTrap ? 2.2 : 0.0
     s += bullSweep ? 1.8 : 0.0
@@ -3995,7 +3992,7 @@ d2_calcBuyScore(int buySetupType_, int buyIntent_, float cbReversalBias_, float 
     s += buyPermission_ ? 0.20 : -1.00
     s
 
-d2_calcSellScore(int sellSetupType_, int sellIntent_, float cbReversalBias_, float cbBreakoutBias_, float sellPremiumQuality_, bool sellConfluenceStrong_, bool sellConfluenceReady_, bool sellPermission_) =>
+d2_calcSellScore(int sellSetupType_, int sellIntent_, float cbReversalBias_, float cbBreakoutBias_, bool sellPermission_) =>
     float s = 0.0
     s += bearTrap ? 2.2 : 0.0
     s += bearSweep ? 1.8 : 0.0
@@ -4077,14 +4074,14 @@ d2_calcSellScore(int sellSetupType_, int sellIntent_, float cbReversalBias_, flo
 //======================================================
 // BASE SCORE - BUY
 //======================================================
-float buyScore = d2_calcBuyScore(buySetupType, buyIntent, cbReversalBias, cbBreakoutBias, buyPremiumQuality, buyConfluenceStrong, buyConfluenceReady, buyPermission)
+float buyScore = d2_calcBuyScore(buySetupType, buyIntent, cbReversalBias, cbBreakoutBias, buyPermission)
 
 //======================================================
 // BASE SCORE - SELL
 //======================================================
-float sellScore = d2_calcSellScore(sellSetupType, sellIntent, cbReversalBias, cbBreakoutBias, sellPremiumQuality, sellConfluenceStrong, sellConfluenceReady, sellPermission)
+float sellScore = d2_calcSellScore(sellSetupType, sellIntent, cbReversalBias, cbBreakoutBias, sellPermission)
 
-d2_calcBuyContextScore(int buyIntent_, float buyPremiumQuality_, bool buyConfluenceStrong_, bool buyConfluenceReady_, bool buyPermission_) =>
+d2_calcBuyContextScore(int buyIntent_, bool buyPermission_) =>
     float s = 0.0
     s += regimeCode == REGIME_TREND_UP ? 0.8 : 0.0
     s += regimeCode == REGIME_EXPANSION ? 0.5 : 0.0
@@ -4136,7 +4133,7 @@ d2_calcBuyContextScore(int buyIntent_, float buyPremiumQuality_, bool buyConflue
     s += buyPermission_ ? 0.18 : -1.20
     s
 
-d2_calcSellContextScore(int sellIntent_, float sellPremiumQuality_, bool sellConfluenceStrong_, bool sellConfluenceReady_, bool sellPermission_) =>
+d2_calcSellContextScore(int sellIntent_, bool sellPermission_) =>
     float s = 0.0
     s += regimeCode == REGIME_TREND_DOWN ? 0.8 : 0.0
     s += regimeCode == REGIME_EXPANSION ? 0.5 : 0.0
@@ -4191,12 +4188,12 @@ d2_calcSellContextScore(int sellIntent_, float sellPremiumQuality_, bool sellCon
 //======================================================
 // CONTEXT SCORE - BUY
 //======================================================
-float buyContextScore = d2_calcBuyContextScore(buyIntent, buyPremiumQuality, buyConfluenceStrong, buyConfluenceReady, buyPermission)
+float buyContextScore = d2_calcBuyContextScore(buyIntent, buyPermission)
 
 //======================================================
 // CONTEXT SCORE - SELL
 //======================================================
-float sellContextScore = d2_calcSellContextScore(sellIntent, sellPremiumQuality, sellConfluenceStrong, sellConfluenceReady, sellPermission)
+float sellContextScore = d2_calcSellContextScore(sellIntent, sellPermission)
 
 var float buyTrapQualityBoost  = 0.0
 var float sellTrapQualityBoost = 0.0
@@ -4312,17 +4309,12 @@ string buyGrade = gradeFromScore(buyUnifiedScoreAdj)
 string sellGrade = gradeFromScore(sellUnifiedScoreAdj)
 string buyConf = confFromScore(buyUnifiedScoreAdj)
 string sellConf = confFromScore(sellUnifiedScoreAdj)
-//======================================================
-// AI CONFIDENCE (folded into confFromScore - DEL 3 uses buyConfEff/sellConfEff)
-//======================================================
+// AI confidence är inbakad i confFromScore (DEL 3 läser buyConfEff/sellConfEff).
 
 
 
 
 
-//======================================================
-// WEAK SETUP FILTERS
-//======================================================
 //======================================================
 // WEAK SETUP FILTERS
 //======================================================
