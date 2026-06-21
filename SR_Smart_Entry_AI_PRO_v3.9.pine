@@ -3987,8 +3987,7 @@ d2_calcBuyScore(int buySetupType_, int buyIntent_, float cbReversalBias_, float 
     s += getSessionBiasPenalty(SIDE_BUY) * -0.34
     s += getSessionBreakBonus(SIDE_BUY)
     s += getSessionReclaimBonus(SIDE_BUY)
-    // REFAKTOR: Confluence/Premium injiceras inte längre här (var dubbelräkning).
-    // De bidrar nu EN gång via buyQualityScore. Booleans används fortfarande som grindar.
+    // REFAKTOR: Confluence/Premium adderas inte här - de är rena gauges/grindar (#1).
     s += buyPermission_ ? 0.20 : -1.00
     s
 
@@ -4066,8 +4065,7 @@ d2_calcSellScore(int sellSetupType_, int sellIntent_, float cbReversalBias_, flo
     s += getSessionBiasPenalty(SIDE_SELL) * -0.34
     s += getSessionBreakBonus(SIDE_SELL)
     s += getSessionReclaimBonus(SIDE_SELL)
-    // REFAKTOR: Confluence/Premium injiceras inte längre här (var dubbelräkning).
-    // De bidrar nu EN gång via sellQualityScore. Booleans används fortfarande som grindar.
+    // REFAKTOR: Confluence/Premium adderas inte här - de är rena gauges/grindar (#1).
     s += sellPermission_ ? 0.20 : -1.00
     s
 
@@ -4128,8 +4126,7 @@ d2_calcBuyContextScore(int buyIntent_, bool buyPermission_) =>
     s += getFalseBreakContextPenalty(SIDE_BUY)
     s += getSessionBiasBonus(SIDE_BUY) * 0.32
     s += getSessionBiasPenalty(SIDE_BUY) * -0.28
-    // REFAKTOR: Confluence/Premium injiceras inte längre här (var dubbelräkning).
-    // De bidrar nu EN gång via buyQualityScore.
+    // REFAKTOR: Confluence/Premium adderas inte här - de är rena gauges/grindar (#1).
     s += buyPermission_ ? 0.18 : -1.20
     s
 
@@ -4180,8 +4177,7 @@ d2_calcSellContextScore(int sellIntent_, bool sellPermission_) =>
     s += getFalseBreakContextPenalty(SIDE_SELL)
     s += getSessionBiasBonus(SIDE_SELL) * 0.32
     s += getSessionBiasPenalty(SIDE_SELL) * -0.28
-    // REFAKTOR: Confluence/Premium injiceras inte längre här (var dubbelräkning).
-    // De bidrar nu EN gång via sellQualityScore.
+    // REFAKTOR: Confluence/Premium adderas inte här - de är rena gauges/grindar (#1).
     s += sellPermission_ ? 0.18 : -1.20
     s
 
@@ -4249,38 +4245,23 @@ sellFinalScore *= sellRegimeAlignMult
 
 
 //======================================================
-// UNIFIED QUALITY SCORE  (REFAKTOR: ersätter gamla SyncScore)
+// ENGINE SEPARATION (REFAKTOR #1: noll numeriskt överlapp)
 //------------------------------------------------------
-// SINGLE SOURCE OF TRUTH för de tre kvalitets-engines:
-//   Confluence, Premium Quality och Engine Agreement.
-// Tidigare återinjicerades dessa i base score, context score, sync score
-// OCH seed score (4-5 ggr) -> samma signal räknades flera gånger och gjorde
-// slutscoren omöjlig att resonera om. Nu bidrar varje engine EXAKT en gång
-// här. Booleans (Ready/Strong/PremiumReady/EngineAgreement) används fortfarande
-// som grindar och trösklar på andra ställen - bara den numeriska dubbel-
-// räkningen är borttagen. Vikterna nedan är satta så att den typiska score-
-// skalan (och därmed grade-trösklarna 9.0/6.8/5.4) ligger kvar ungefär som förr.
+// ARKITEKTUR:
+//   * DIRECTIONAL SCORE = buyFinalScore/sellFinalScore (base + context + trap).
+//     Här bor VARJE rå signal exakt en gång: triggers, location, momentum,
+//     struktur, session OCH riktnings-bias (htf/memory/whale/path/liquidity).
+//   * KVALITETS-ENGINES (Confluence, Premium, Engine Agreement) adderas INTE
+//     längre numeriskt till scoren - de är rena GAUGES/GRINDAR:
+//       - buyConfluenceReady/Strong, buyPremiumReady, buyEngineAgreement
+//         används för permission-grindar, confluence-trösklar (3727-3731),
+//         seed/PRE-grindar och display.
+//     De är byggda av SAMMA råsignaler som redan finns i directional score,
+//     så all numerisk addition av dem var per definition dubbelräkning.
+// => Slutscoren körs nu på ren riktningsdata. Grade-skalan normaliseras i #2.
 //======================================================
-float buyQualityScore = 0.0
-buyQualityScore += buyConfluenceScore * 0.26                                   // Confluence: en gång (var base 0.16 + ctx 0.12 + sync-excess)
-buyQualityScore += buyConfluenceStrong ? 0.40 : buyConfluenceReady ? 0.18 : 0.0 // Confluence-grindbonus: en gång (var base + ctx)
-buyQualityScore += math.max(buyPremiumQuality, 0.0) * 0.55                     // Premium: en gång (var base 0.26 + ctx 0.22 + sync 0.12)
-buyQualityScore += buyEngineAgreement * 0.55                                   // Engine agreement: en gång (var bara i sync)
-buyQualityScore += buyPermission ? 0.12 : -0.28
-buyQualityScore += falseBreakoutRiskBuy ? -0.35 : 0.0
-buyQualityScore := clamp(buyQualityScore, -2.20, 3.40)
-
-float sellQualityScore = 0.0
-sellQualityScore += sellConfluenceScore * 0.26
-sellQualityScore += sellConfluenceStrong ? 0.40 : sellConfluenceReady ? 0.18 : 0.0
-sellQualityScore += math.max(sellPremiumQuality, 0.0) * 0.55
-sellQualityScore += sellEngineAgreement * 0.55
-sellQualityScore += sellPermission ? 0.12 : -0.28
-sellQualityScore += falseBreakoutRiskSell ? -0.35 : 0.0
-sellQualityScore := clamp(sellQualityScore, -2.20, 3.40)
-
-float buyUnifiedScore = buyFinalScore + buyQualityScore
-float sellUnifiedScore = sellFinalScore + sellQualityScore
+float buyUnifiedScore = buyFinalScore
+float sellUnifiedScore = sellFinalScore
 
 //======================================================
 // DYNAMIC GRADE THRESHOLD (improvement 3)
