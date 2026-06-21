@@ -422,6 +422,8 @@ STRAT_ENABLE   = input.bool(true,  "Aktivera strategi-order", group="Strategy")
 STRAT_RISK_PCT = input.float(1.0,  "Risk per trade (% av equity)", group="Strategy", minval=0.1, maxval=10.0, step=0.1)
 STRAT_LONGS    = input.bool(true,  "Tillåt long", group="Strategy")
 STRAT_SHORTS   = input.bool(true,  "Tillåt short", group="Strategy")
+STRAT_TP1_PCT  = input.float(50, "Stäng % vid TP1", group="Strategy", minval=0, maxval=100, step=5)
+STRAT_TP2_PCT  = input.float(50, "Stäng % av resten vid TP2", group="Strategy", minval=0, maxval=100, step=5)
 
 intentText(int intent) =>
     string txt = "NONE"
@@ -6864,14 +6866,22 @@ if tradeActive
         if sellStopNow
             closeTradeNow := true
 
-// STRATEGI: skyddande bracket (stop=setupSL inkl BE-flytt, limit=setupTP3).
-// Placeras medan position är öppen och setupSL/TP är giltiga (före reset nedan).
-// Broker-emulatorn fyller intrabar på exakt SL/TP -> realistisk exit.
+// STRATEGI: partiella exits (scale-out). Tar vinst vid TP1 och TP2, runner till
+// TP3. Stoppen följer setupSL som indikatorn flyttar till BE efter TP1. Faserna
+// gatas av indikatorns egna tp1Taken/tp2Taken -> ingen dubbel-stängning.
 if STRAT_ENABLE
     if strategy.position_size > 0 and not na(setupSL)
-        strategy.exit("xL", from_entry="Long", stop=setupSL, limit=setupTP3)
+        if not tp1Taken
+            strategy.exit("L1", from_entry="Long", qty_percent=STRAT_TP1_PCT, limit=setupTP1, stop=setupSL)
+        else if not tp2Taken
+            strategy.exit("L2", from_entry="Long", qty_percent=STRAT_TP2_PCT, limit=setupTP2, stop=setupSL)
+        strategy.exit("L3", from_entry="Long", stop=setupSL, limit=setupTP3)
     if strategy.position_size < 0 and not na(setupSL)
-        strategy.exit("xS", from_entry="Short", stop=setupSL, limit=setupTP3)
+        if not tp1Taken
+            strategy.exit("S1", from_entry="Short", qty_percent=STRAT_TP1_PCT, limit=setupTP1, stop=setupSL)
+        else if not tp2Taken
+            strategy.exit("S2", from_entry="Short", qty_percent=STRAT_TP2_PCT, limit=setupTP2, stop=setupSL)
+        strategy.exit("S3", from_entry="Short", stop=setupSL, limit=setupTP3)
 
 if closeTradeNow
     d3_clearVisuals()
