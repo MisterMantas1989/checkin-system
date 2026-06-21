@@ -85,7 +85,7 @@ LABEL_COLUMN_OFFSET = 5
 
 MOVE_SL_TO_BE_AFTER_TP1 = true
 ENABLE_SAME_BAR_ENTRY = true
-SAME_BAR_MIN_SCORE = 8.0
+SAME_BAR_MIN_SCORE = input.float(8.0, "Same-Bar Entry Min Score", group="Grade Thresholds", minval=0.0, maxval=20.0, step=0.1)
 SHOW_ZONES = true
 SHOW_EMAS = true
 SHOW_SIGNAL_LABELS = true
@@ -331,21 +331,28 @@ clearLabel(label lb) =>
     if not na(lb)
         label.delete(lb)
 
+// REFAKTOR #5: grade-/conf-trösklar som inputs (normaliserad 0..MAX-skala)
+GRADE_TH_APLUS = input.float(9.0, "Grade A+ threshold", group="Grade Thresholds", minval=0.0, maxval=20.0, step=0.1)
+GRADE_TH_A     = input.float(6.8, "Grade A threshold",  group="Grade Thresholds", minval=0.0, maxval=20.0, step=0.1)
+GRADE_TH_B     = input.float(5.4, "Grade B threshold",  group="Grade Thresholds", minval=0.0, maxval=20.0, step=0.1)
+CONF_TH_HIGH   = input.float(9.0, "Confidence HIGH threshold", group="Grade Thresholds", minval=0.0, maxval=20.0, step=0.1)
+CONF_TH_MED    = input.float(7.2, "Confidence MED threshold",  group="Grade Thresholds", minval=0.0, maxval=20.0, step=0.1)
+
 gradeFromScore(float score) =>
     string g = "C"
-    if score >= 9.0
+    if score >= GRADE_TH_APLUS
         g := "A+"
-    else if score >= 6.8
+    else if score >= GRADE_TH_A
         g := "A"
-    else if score >= 5.4
+    else if score >= GRADE_TH_B
         g := "B"
     g
 
 confFromScore(float score) =>
     string c = "LOW"
-    if score >= 9.0
+    if score >= CONF_TH_HIGH
         c := "HIGH"
-    else if score >= 7.2
+    else if score >= CONF_TH_MED
         c := "MED"
     c
 
@@ -377,6 +384,20 @@ DIM_RETURN = input.float(0.40, "Correlated Signal Damping", group="Score Normali
 dimSum3(float a, float b, float c) =>
     float hi = math.max(a, math.max(b, c))
     hi + ((a + b + c) - hi) * DIM_RETURN
+
+//======================================================
+// REFAKTOR #5: GRUPP-VIKTER för base score
+//------------------------------------------------------
+// Base score är uppdelad i namngivna delpoäng. Default 1.0 = oförändrad
+// matematik. Skruva en grupp uppåt/nedåt för att t.ex. låta momentum väga
+// tyngre eller location mindre - utan att röra de enskilda signalvikterna.
+//======================================================
+GRP_W_TRIGGER   = input.float(1.0, "Group: Triggers",  group="Score Group Weights", minval=0.0, maxval=2.0, step=0.05)
+GRP_W_LOCATION  = input.float(1.0, "Group: Location",  group="Score Group Weights", minval=0.0, maxval=2.0, step=0.05)
+GRP_W_MOMENTUM  = input.float(1.0, "Group: Momentum",  group="Score Group Weights", minval=0.0, maxval=2.0, step=0.05)
+GRP_W_STRUCTURE = input.float(1.0, "Group: Structure", group="Score Group Weights", minval=0.0, maxval=2.0, step=0.05)
+GRP_W_BIAS      = input.float(1.0, "Group: Coin-DNA",  group="Score Group Weights", minval=0.0, maxval=2.0, step=0.05)
+GRP_W_SESSION   = input.float(1.0, "Group: Session",   group="Score Group Weights", minval=0.0, maxval=2.0, step=0.05)
 
 intentText(int intent) =>
     string txt = "NONE"
@@ -3944,156 +3965,184 @@ if barstate.isconfirmed
 //======================================================
 d2_calcBuyScore(int buySetupType_, int buyIntent_, float cbReversalBias_, float cbBreakoutBias_, bool buyPermission_) =>
     float s = 0.0
-    s += bullTrap ? 2.2 : 0.0
-    s += bullSweep ? 1.8 : 0.0
-    s += sessionReclaimBuyRef ? 1.15 : 0.0
-    s += sessionRejectBuyRef ? 0.80 : 0.0
-    s += sessionBreakoutPressureBuyRef ? 0.90 : 0.0
-    s += bullBounce ? (1.5 + cbReversalBias_) : 0.0
-    s += softBullReclaim ? (1.2 + cbReversalBias_ * 0.7) : 0.0
-    s += bullRetest ? 1.7 : 0.0
-    s += bullBreakoutAllowed ? (1.2 + math.max(cbBreakoutBias_, 0.0)) : 0.0
-    s += smartBreakoutReadyBuy ? 1.15 : 0.0
-    s += buyBreakAntEarly and not smartBreakoutReadyBuy ? 0.55 : 0.0
-    s += math.min(buyBreakAntScore * 0.22, 1.0)
-    s += softSupportReject ? (1.15 + cbReversalBias_ * 0.6) : 0.0
-    s += localFlushBuy ? (1.00 + cbReversalBias_ * 0.5) : 0.0
-    s += microClusterLow ? 0.7 : 0.0
-    s += hiddenLiquidityBuy ? 1.05 : 0.0
-    s += strongLiquidityBuy ? 1.35 : 0.0
-    s += strongSupportRejection ? 1.45 : 0.0
-    s += buyInstitutionalRejection ? 1.25 : 0.0
-    s += buyReclaimHighQuality ? 0.40 : 0.0
-    s += trapBuy ? 1.0 : 0.0
-    s += lsBuyStrict ? 0.80 : 0.0
-    s += bullTrapEarly ? 0.75 : 0.0
-    s += bullTrapStrict ? 1.15 : 0.0
-    s += bullTrapStrictPlus ? 0.35 : 0.0
-    s += tcBuyStrict ? 0.85 : 0.0
-    s += buySetupType_ == SETUP_RECLAIM ? 0.18 : 0.0
-    s += buySetupType_ == SETUP_BREAKOUT_BUILD ? 0.28 : 0.0
-    s += buySetupType_ == SETUP_LIQUIDITY_TRAP ? 0.20 : 0.0
-    s += buySetupType_ == SETUP_VWAP_REVERSION ? 0.35 : 0.0
-    s += buySetupType_ == SETUP_OPEN_MOMENTUM ? 0.45 : 0.0
-    s += buySetupType_ == SETUP_FAILED_BREAKOUT ? 0.30 : 0.0
-    s += marketMemoryBias == 1 ? 0.8 : 0.0
-    s += microRangeActive ? -0.35 : 0.15
-    s += coinDnaCode == COIN_DNA_TREND_DRIVER ? 0.35 : 0.0
-    s += coinDnaCode == COIN_DNA_MOMENTUM_EXPLOSIVE ? 0.25 : 0.0
-    s += coinDnaCode == COIN_DNA_LIQUIDITY_HUNTER and buyIntent_ == INTENT_LIQUIDITY ? 0.25 : 0.0
-    // REFAKTOR #3: korrelerat location-kluster med avtagande effekt (var rak summa 1.0+0.65+0.60)
-    s += dimSum3(nearSupport ? 1.0 : 0.0, nearCurrentSessionLow ? 0.65 : 0.0, nearRelayLow ? 0.60 : 0.0)
-    s += bullMacd ? 0.8 : 0.0
-    s += trendUpBasic ? 1.1 : 0.0
-    s += bullVolImpulse ? 0.8 : 0.0
+    float gTrigger   = 0.0
+    float gLocation  = 0.0
+    float gMomentum  = 0.0
+    float gStructure = 0.0
+    float gBias      = 0.0
+    float gSession   = 0.0
+    float gCore      = 0.0
+    // -- TRIGGERS (entry-mönster)
+    gTrigger += bullTrap ? 2.2 : 0.0
+    gTrigger += bullSweep ? 1.8 : 0.0
+    gTrigger += bullBounce ? (1.5 + cbReversalBias_) : 0.0
+    gTrigger += softBullReclaim ? (1.2 + cbReversalBias_ * 0.7) : 0.0
+    gTrigger += bullRetest ? 1.7 : 0.0
+    gTrigger += bullBreakoutAllowed ? (1.2 + math.max(cbBreakoutBias_, 0.0)) : 0.0
+    gTrigger += smartBreakoutReadyBuy ? 1.15 : 0.0
+    gTrigger += buyBreakAntEarly and not smartBreakoutReadyBuy ? 0.55 : 0.0
+    gTrigger += math.min(buyBreakAntScore * 0.22, 1.0)
+    gTrigger += softSupportReject ? (1.15 + cbReversalBias_ * 0.6) : 0.0
+    gTrigger += localFlushBuy ? (1.00 + cbReversalBias_ * 0.5) : 0.0
+    gTrigger += microClusterLow ? 0.7 : 0.0
+    gTrigger += hiddenLiquidityBuy ? 1.05 : 0.0
+    gTrigger += strongLiquidityBuy ? 1.35 : 0.0
+    gTrigger += strongSupportRejection ? 1.45 : 0.0
+    gTrigger += buyInstitutionalRejection ? 1.25 : 0.0
+    gTrigger += buyReclaimHighQuality ? 0.40 : 0.0
+    gTrigger += trapBuy ? 1.0 : 0.0
+    gTrigger += lsBuyStrict ? 0.80 : 0.0
+    gTrigger += bullTrapEarly ? 0.75 : 0.0
+    gTrigger += bullTrapStrict ? 1.15 : 0.0
+    gTrigger += bullTrapStrictPlus ? 0.35 : 0.0
+    gTrigger += tcBuyStrict ? 0.85 : 0.0
+    // -- LOCATION / likviditet
+    gLocation += dimSum3(nearSupport ? 1.0 : 0.0, nearCurrentSessionLow ? 0.65 : 0.0, nearRelayLow ? 0.60 : 0.0)
+    gLocation += liquidityPoolScoreDown * 0.25
+    gLocation += nearBullFvg ? 0.28 : 0.0
+    gLocation += fvgRetestBuy ? 0.40 : 0.0
+    gLocation += getPreSweepScoreBonus(SIDE_BUY, preSweepBias, buyIntent_)
+    gLocation += getPathScoreBonus(SIDE_BUY)
+    // -- MOMENTUM / candle / RSI
     float cqb = clamp(safeDiv(candleBody, math.max(barRange, syminfo.mintick), 0.0) * 0.40 + safeDiv(close - low, math.max(barRange, syminfo.mintick), 0.0) * 0.35 + (lowerWick > upperWick * 1.5 ? 0.25 : 0.0), 0.0, 1.0)
-    s += cqb * 0.80
-    s += lateEntryOk ? 0.35 : 0.0
-    s += chaseBuyOk ? 0.3 : -0.1
-    s += close > emaFast ? 0.35 : 0.0
-    s += sessionCode == SESSION_NY_OPEN ? 0.35 : (sessionCode == SESSION_LONDON or sessionCode == SESSION_NY_LATE) ? 0.20 : 0.0
-    s += htfStructureBias == 1 ? HTF_SCORE_BOOST : 0.0
-    s += htfStructureBias == -1 ? -HTF_SCORE_PENALTY : 0.0
-    s += liquidityPoolScoreDown * 0.25
-    s += volatilityExpansionReady ? 0.35 : 0.0
-    s += rsiOversold ? 0.45 : 0.0
-    s += rsiBullDiv ? 0.38 : 0.0
-    s += rsiRisingBull and rsiVal < 55 ? 0.18 : 0.0
-    s += rsiOverbought ? -0.35 : 0.0
-    s += pullbackQualityBuy and buySetupType_ == SETUP_CONTINUATION ? 0.30 : 0.0
-    s += pullbackTooDeepBuy and buySetupType_ == SETUP_CONTINUATION ? -0.40 : 0.0
-    s += bullBos and buySetupType_ == SETUP_CONTINUATION ? 0.30 : 0.0
-    s += bullChoch ? 0.25 : 0.0
-    s += nearBullFvg ? 0.28 : 0.0
-    s += fvgRetestBuy ? 0.40 : 0.0
-    s += volume > volSma20 * VOL_CONFIRM_MULT and (buySetupType_ == SETUP_LIQUIDITY_TRAP or buySetupType_ == SETUP_SWEEP) ? 0.40 : 0.0
-    s += getPreSweepScoreBonus(SIDE_BUY, preSweepBias, buyIntent_)
-    s += getPathScoreBonus(SIDE_BUY)
-    s += getWhaleScoreBonus(SIDE_BUY)
-    s += getFalseBreakPenalty(SIDE_BUY)
-    s += getSessionBiasBonus(SIDE_BUY) * 0.42
-    s += getSessionBiasPenalty(SIDE_BUY) * -0.34
-    s += getSessionBreakBonus(SIDE_BUY)
-    s += getSessionReclaimBonus(SIDE_BUY)
-    // REFAKTOR: Confluence/Premium adderas inte här - de är rena gauges/grindar (#1).
-    s += buyPermission_ ? 0.20 : -1.00
+    gMomentum += bullMacd ? 0.8 : 0.0
+    gMomentum += trendUpBasic ? 1.1 : 0.0
+    gMomentum += bullVolImpulse ? 0.8 : 0.0
+    gMomentum += cqb * 0.80
+    gMomentum += lateEntryOk ? 0.35 : 0.0
+    gMomentum += chaseBuyOk ? 0.3 : -0.1
+    gMomentum += close > emaFast ? 0.35 : 0.0
+    gMomentum += volatilityExpansionReady ? 0.35 : 0.0
+    gMomentum += rsiOversold ? 0.45 : 0.0
+    gMomentum += rsiBullDiv ? 0.38 : 0.0
+    gMomentum += rsiRisingBull and rsiVal < 55 ? 0.18 : 0.0
+    gMomentum += rsiOverbought ? -0.35 : 0.0
+    // -- STRUKTUR / HTF / minne
+    gStructure += marketMemoryBias == 1 ? 0.8 : 0.0
+    gStructure += microRangeActive ? -0.35 : 0.15
+    gStructure += htfStructureBias == 1 ? HTF_SCORE_BOOST : 0.0
+    gStructure += htfStructureBias == -1 ? -HTF_SCORE_PENALTY : 0.0
+    gStructure += bullChoch ? 0.25 : 0.0
+    gStructure += getWhaleScoreBonus(SIDE_BUY)
+    gStructure += getFalseBreakPenalty(SIDE_BUY)
+    // -- COIN-DNA
+    gBias += coinDnaCode == COIN_DNA_TREND_DRIVER ? 0.35 : 0.0
+    gBias += coinDnaCode == COIN_DNA_MOMENTUM_EXPLOSIVE ? 0.25 : 0.0
+    gBias += coinDnaCode == COIN_DNA_LIQUIDITY_HUNTER and buyIntent_ == INTENT_LIQUIDITY ? 0.25 : 0.0
+    // -- SESSION
+    gSession += sessionReclaimBuyRef ? 1.15 : 0.0
+    gSession += sessionRejectBuyRef ? 0.80 : 0.0
+    gSession += sessionBreakoutPressureBuyRef ? 0.90 : 0.0
+    gSession += sessionCode == SESSION_NY_OPEN ? 0.35 : (sessionCode == SESSION_LONDON or sessionCode == SESSION_NY_LATE) ? 0.20 : 0.0
+    gSession += getSessionBiasBonus(SIDE_BUY) * 0.42
+    gSession += getSessionBiasPenalty(SIDE_BUY) * -0.34
+    gSession += getSessionBreakBonus(SIDE_BUY)
+    gSession += getSessionReclaimBonus(SIDE_BUY)
+    // -- CORE (setup-typ, volym, permission - ovägd)
+    gCore += buySetupType_ == SETUP_RECLAIM ? 0.18 : 0.0
+    gCore += buySetupType_ == SETUP_BREAKOUT_BUILD ? 0.28 : 0.0
+    gCore += buySetupType_ == SETUP_LIQUIDITY_TRAP ? 0.20 : 0.0
+    gCore += buySetupType_ == SETUP_VWAP_REVERSION ? 0.35 : 0.0
+    gCore += buySetupType_ == SETUP_OPEN_MOMENTUM ? 0.45 : 0.0
+    gCore += buySetupType_ == SETUP_FAILED_BREAKOUT ? 0.30 : 0.0
+    gCore += pullbackQualityBuy and buySetupType_ == SETUP_CONTINUATION ? 0.30 : 0.0
+    gCore += pullbackTooDeepBuy and buySetupType_ == SETUP_CONTINUATION ? -0.40 : 0.0
+    gCore += bullBos and buySetupType_ == SETUP_CONTINUATION ? 0.30 : 0.0
+    gCore += volume > volSma20 * VOL_CONFIRM_MULT and (buySetupType_ == SETUP_LIQUIDITY_TRAP or buySetupType_ == SETUP_SWEEP) ? 0.40 : 0.0
+    gCore += buyPermission_ ? 0.20 : -1.00
+    // -- viktad summa (gruppvikter default 1.0 = identisk matematik)
+    s := gTrigger*GRP_W_TRIGGER + gLocation*GRP_W_LOCATION + gMomentum*GRP_W_MOMENTUM + gStructure*GRP_W_STRUCTURE + gBias*GRP_W_BIAS + gSession*GRP_W_SESSION + gCore
     s
 
 d2_calcSellScore(int sellSetupType_, int sellIntent_, float cbReversalBias_, float cbBreakoutBias_, bool sellPermission_) =>
     float s = 0.0
-    s += bearTrap ? 2.2 : 0.0
-    s += bearSweep ? 1.8 : 0.0
-    s += sessionReclaimSellRef ? 1.15 : 0.0
-    s += sessionRejectSellRef ? 0.80 : 0.0
-    s += sessionBreakoutPressureSellRef ? 0.90 : 0.0
-    s += bearReject ? (1.5 + cbReversalBias_) : 0.0
-    s += softBearReclaim ? (1.2 + cbReversalBias_ * 0.7) : 0.0
-    s += bearRetest ? 1.7 : 0.0
-    s += bearBreakdownAllowed ? (1.2 + math.max(-cbBreakoutBias_, 0.0)) : 0.0
-    s += smartBreakdownReadySell ? 1.15 : 0.0
-    s += sellBreakAntEarly and not smartBreakdownReadySell ? 0.55 : 0.0
-    s += math.min(sellBreakAntScore * 0.22, 1.0)
-    s += softResistanceReject ? (1.15 + cbReversalBias_ * 0.6) : 0.0
-    s += localBlowoffSell ? (1.00 + cbReversalBias_ * 0.5) : 0.0
-    s += microClusterHigh ? 0.7 : 0.0
-    s += hiddenLiquiditySell ? 1.05 : 0.0
-    s += strongLiquiditySell ? 1.35 : 0.0
-    s += strongResistanceRejection ? 1.45 : 0.0
-    s += sellInstitutionalRejection ? 1.25 : 0.0
-    s += sellReclaimHighQuality ? 0.40 : 0.0
-    s += trapSell ? 1.0 : 0.0
-    s += lsSellStrict ? 0.80 : 0.0
-    s += bearTrapEarly ? 0.75 : 0.0
-    s += bearTrapStrict ? 1.15 : 0.0
-    s += bearTrapStrictPlus ? 0.35 : 0.0
-    s += tcSellStrict ? 0.85 : 0.0
-    s += sellSetupType_ == SETUP_RECLAIM ? 0.18 : 0.0
-    s += sellSetupType_ == SETUP_BREAKOUT_BUILD ? 0.28 : 0.0
-    s += sellSetupType_ == SETUP_LIQUIDITY_TRAP ? 0.20 : 0.0
-    s += sellSetupType_ == SETUP_VWAP_REVERSION ? 0.35 : 0.0
-    s += sellSetupType_ == SETUP_OPEN_MOMENTUM ? 0.45 : 0.0
-    s += sellSetupType_ == SETUP_FAILED_BREAKOUT ? 0.30 : 0.0
-    s += marketMemoryBias == -1 ? 0.8 : 0.0
-    s += microRangeActive ? -0.35 : 0.15
-    s += coinDnaCode == COIN_DNA_TREND_DRIVER ? 0.35 : 0.0
-    s += coinDnaCode == COIN_DNA_MOMENTUM_EXPLOSIVE ? 0.25 : 0.0
-    s += coinDnaCode == COIN_DNA_LIQUIDITY_HUNTER and sellIntent_ == INTENT_LIQUIDITY ? 0.25 : 0.0
-    // REFAKTOR #3: korrelerat location-kluster med avtagande effekt (var rak summa 1.0+0.65+0.60)
-    s += dimSum3(nearResistance ? 1.0 : 0.0, nearCurrentSessionHigh ? 0.65 : 0.0, nearRelayHigh ? 0.60 : 0.0)
-    s += bearMacd ? 0.8 : 0.0
-    s += trendDownBasic ? 1.1 : 0.0
-    s += bearVolImpulse ? 0.8 : 0.0
+    float gTrigger   = 0.0
+    float gLocation  = 0.0
+    float gMomentum  = 0.0
+    float gStructure = 0.0
+    float gBias      = 0.0
+    float gSession   = 0.0
+    float gCore      = 0.0
+    // -- TRIGGERS (entry-mönster)
+    gTrigger += bearTrap ? 2.2 : 0.0
+    gTrigger += bearSweep ? 1.8 : 0.0
+    gTrigger += bearReject ? (1.5 + cbReversalBias_) : 0.0
+    gTrigger += softBearReclaim ? (1.2 + cbReversalBias_ * 0.7) : 0.0
+    gTrigger += bearRetest ? 1.7 : 0.0
+    gTrigger += bearBreakdownAllowed ? (1.2 + math.max(-cbBreakoutBias_, 0.0)) : 0.0
+    gTrigger += smartBreakdownReadySell ? 1.15 : 0.0
+    gTrigger += sellBreakAntEarly and not smartBreakdownReadySell ? 0.55 : 0.0
+    gTrigger += math.min(sellBreakAntScore * 0.22, 1.0)
+    gTrigger += softResistanceReject ? (1.15 + cbReversalBias_ * 0.6) : 0.0
+    gTrigger += localBlowoffSell ? (1.00 + cbReversalBias_ * 0.5) : 0.0
+    gTrigger += microClusterHigh ? 0.7 : 0.0
+    gTrigger += hiddenLiquiditySell ? 1.05 : 0.0
+    gTrigger += strongLiquiditySell ? 1.35 : 0.0
+    gTrigger += strongResistanceRejection ? 1.45 : 0.0
+    gTrigger += sellInstitutionalRejection ? 1.25 : 0.0
+    gTrigger += sellReclaimHighQuality ? 0.40 : 0.0
+    gTrigger += trapSell ? 1.0 : 0.0
+    gTrigger += lsSellStrict ? 0.80 : 0.0
+    gTrigger += bearTrapEarly ? 0.75 : 0.0
+    gTrigger += bearTrapStrict ? 1.15 : 0.0
+    gTrigger += bearTrapStrictPlus ? 0.35 : 0.0
+    gTrigger += tcSellStrict ? 0.85 : 0.0
+    // -- LOCATION / likviditet
+    gLocation += dimSum3(nearResistance ? 1.0 : 0.0, nearCurrentSessionHigh ? 0.65 : 0.0, nearRelayHigh ? 0.60 : 0.0)
+    gLocation += liquidityPoolScoreUp * 0.25
+    gLocation += nearBearFvg ? 0.28 : 0.0
+    gLocation += fvgRetestSell ? 0.40 : 0.0
+    gLocation += getPreSweepScoreBonus(SIDE_SELL, preSweepBias, sellIntent_)
+    gLocation += getPathScoreBonus(SIDE_SELL)
+    // -- MOMENTUM / candle / RSI
     float cqs = clamp(safeDiv(candleBody, math.max(barRange, syminfo.mintick), 0.0) * 0.40 + safeDiv(high - close, math.max(barRange, syminfo.mintick), 0.0) * 0.35 + (upperWick > lowerWick * 1.5 ? 0.25 : 0.0), 0.0, 1.0)
-    s += cqs * 0.80
-    s += lateEntryOk ? 0.35 : 0.0
-    s += chaseSellOk ? 0.3 : -0.1
-    s += close < emaFast ? 0.35 : 0.0
-    s += sessionCode == SESSION_NY_OPEN ? 0.35 : (sessionCode == SESSION_LONDON or sessionCode == SESSION_NY_LATE) ? 0.20 : 0.0
-    s += htfStructureBias == -1 ? HTF_SCORE_BOOST : 0.0
-    s += htfStructureBias == 1 ? -HTF_SCORE_PENALTY : 0.0
-    s += liquidityPoolScoreUp * 0.25
-    s += volatilityExpansionReady ? 0.35 : 0.0
-    s += rsiOverbought ? 0.45 : 0.0
-    s += rsiBearDiv ? 0.38 : 0.0
-    s += rsiFallingBear and rsiVal > 45 ? 0.18 : 0.0
-    s += rsiOversold ? -0.35 : 0.0
-    s += pullbackQualitySell and sellSetupType_ == SETUP_CONTINUATION ? 0.30 : 0.0
-    s += pullbackTooDeepSell and sellSetupType_ == SETUP_CONTINUATION ? -0.40 : 0.0
-    s += bearBos and sellSetupType_ == SETUP_CONTINUATION ? 0.30 : 0.0
-    s += bearChoch ? 0.25 : 0.0
-    s += nearBearFvg ? 0.28 : 0.0
-    s += fvgRetestSell ? 0.40 : 0.0
-    s += volume > volSma20 * VOL_CONFIRM_MULT and (sellSetupType_ == SETUP_LIQUIDITY_TRAP or sellSetupType_ == SETUP_SWEEP) ? 0.40 : 0.0
-    s += getPreSweepScoreBonus(SIDE_SELL, preSweepBias, sellIntent_)
-    s += getPathScoreBonus(SIDE_SELL)
-    s += getWhaleScoreBonus(SIDE_SELL)
-    s += getFalseBreakPenalty(SIDE_SELL)
-    s += getSessionBiasBonus(SIDE_SELL) * 0.42
-    s += getSessionBiasPenalty(SIDE_SELL) * -0.34
-    s += getSessionBreakBonus(SIDE_SELL)
-    s += getSessionReclaimBonus(SIDE_SELL)
-    // REFAKTOR: Confluence/Premium adderas inte här - de är rena gauges/grindar (#1).
-    s += sellPermission_ ? 0.20 : -1.00
+    gMomentum += bearMacd ? 0.8 : 0.0
+    gMomentum += trendDownBasic ? 1.1 : 0.0
+    gMomentum += bearVolImpulse ? 0.8 : 0.0
+    gMomentum += cqs * 0.80
+    gMomentum += lateEntryOk ? 0.35 : 0.0
+    gMomentum += chaseSellOk ? 0.3 : -0.1
+    gMomentum += close < emaFast ? 0.35 : 0.0
+    gMomentum += volatilityExpansionReady ? 0.35 : 0.0
+    gMomentum += rsiOverbought ? 0.45 : 0.0
+    gMomentum += rsiBearDiv ? 0.38 : 0.0
+    gMomentum += rsiFallingBear and rsiVal > 45 ? 0.18 : 0.0
+    gMomentum += rsiOversold ? -0.35 : 0.0
+    // -- STRUKTUR / HTF / minne
+    gStructure += marketMemoryBias == -1 ? 0.8 : 0.0
+    gStructure += microRangeActive ? -0.35 : 0.15
+    gStructure += htfStructureBias == -1 ? HTF_SCORE_BOOST : 0.0
+    gStructure += htfStructureBias == 1 ? -HTF_SCORE_PENALTY : 0.0
+    gStructure += bearChoch ? 0.25 : 0.0
+    gStructure += getWhaleScoreBonus(SIDE_SELL)
+    gStructure += getFalseBreakPenalty(SIDE_SELL)
+    // -- COIN-DNA
+    gBias += coinDnaCode == COIN_DNA_TREND_DRIVER ? 0.35 : 0.0
+    gBias += coinDnaCode == COIN_DNA_MOMENTUM_EXPLOSIVE ? 0.25 : 0.0
+    gBias += coinDnaCode == COIN_DNA_LIQUIDITY_HUNTER and sellIntent_ == INTENT_LIQUIDITY ? 0.25 : 0.0
+    // -- SESSION
+    gSession += sessionReclaimSellRef ? 1.15 : 0.0
+    gSession += sessionRejectSellRef ? 0.80 : 0.0
+    gSession += sessionBreakoutPressureSellRef ? 0.90 : 0.0
+    gSession += sessionCode == SESSION_NY_OPEN ? 0.35 : (sessionCode == SESSION_LONDON or sessionCode == SESSION_NY_LATE) ? 0.20 : 0.0
+    gSession += getSessionBiasBonus(SIDE_SELL) * 0.42
+    gSession += getSessionBiasPenalty(SIDE_SELL) * -0.34
+    gSession += getSessionBreakBonus(SIDE_SELL)
+    gSession += getSessionReclaimBonus(SIDE_SELL)
+    // -- CORE (setup-typ, volym, permission - ovägd)
+    gCore += sellSetupType_ == SETUP_RECLAIM ? 0.18 : 0.0
+    gCore += sellSetupType_ == SETUP_BREAKOUT_BUILD ? 0.28 : 0.0
+    gCore += sellSetupType_ == SETUP_LIQUIDITY_TRAP ? 0.20 : 0.0
+    gCore += sellSetupType_ == SETUP_VWAP_REVERSION ? 0.35 : 0.0
+    gCore += sellSetupType_ == SETUP_OPEN_MOMENTUM ? 0.45 : 0.0
+    gCore += sellSetupType_ == SETUP_FAILED_BREAKOUT ? 0.30 : 0.0
+    gCore += pullbackQualitySell and sellSetupType_ == SETUP_CONTINUATION ? 0.30 : 0.0
+    gCore += pullbackTooDeepSell and sellSetupType_ == SETUP_CONTINUATION ? -0.40 : 0.0
+    gCore += bearBos and sellSetupType_ == SETUP_CONTINUATION ? 0.30 : 0.0
+    gCore += volume > volSma20 * VOL_CONFIRM_MULT and (sellSetupType_ == SETUP_LIQUIDITY_TRAP or sellSetupType_ == SETUP_SWEEP) ? 0.40 : 0.0
+    gCore += sellPermission_ ? 0.20 : -1.00
+    // -- viktad summa (gruppvikter default 1.0 = identisk matematik)
+    s := gTrigger*GRP_W_TRIGGER + gLocation*GRP_W_LOCATION + gMomentum*GRP_W_MOMENTUM + gStructure*GRP_W_STRUCTURE + gBias*GRP_W_BIAS + gSession*GRP_W_SESSION + gCore
     s
 
 //======================================================
