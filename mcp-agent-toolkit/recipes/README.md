@@ -11,6 +11,7 @@ can paste straight into your AI client.
 | [Content factory](./content-factory.md) | Turn a topic into finished copy plus a matching generated image | Perplexity + Glif |
 | [Auto-tests & web automation](./playwright-testing.md) | Drive a real browser to test flows, then save a Playwright test | Playwright (+ Chrome DevTools) |
 | [Extra APIs](./extra-apis.md) | Curated free APIs (enrichment, URL-safety, stock photos, export) that boost the recipes | Notion + REST APIs |
+| [Claude power prompts](./claude-power-prompts.md) | 10 senior-engineer role prompts (build, audit, debug, optimize, secure, deploy) | Any client — pairs with the servers |
 
 ## How to use a recipe
 
