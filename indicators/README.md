@@ -16,12 +16,18 @@ and timeframe:
 | Order blocks | grey boxes at swing tips | supply/demand boxes (`Order blocks`) |
 | Support / Resistance | red horizontal line + "Resistance" | line + label at the active level |
 | Fibonacci | 0 → 1 levels with colour bands | retracement on the most recent swing leg |
-| Trade setup | "Entry Short" / "Stop-Loss" / "Target" | Entry line + risk (red) & reward (teal) zones with labels |
+| Trade setup | "Entry" / "Stop-Loss" / "Target" | Entry line + risk (red) & reward (teal) zones with labels |
 
-When a swing **high** confirms, a **short** setup is drawn (Resistance →
-Entry Short, Stop-Loss zone above, Target zone below). When a swing **low**
-confirms, the mirrored **long** setup is drawn (Support → Entry Long, Stop-Loss
-below, Target above).
+Both the **buy** and **sell** sides are shown at the same time, using the same
+mirrored logic:
+
+- A confirmed swing **high** refreshes the **Sell** setup — Resistance →
+  Sell Entry, Stop-Loss zone above, Target zone below.
+- A confirmed swing **low** refreshes the **Buy** setup — Support → Buy Entry,
+  Stop-Loss zone below, Target zone above.
+
+Each side is maintained independently, so the latest buy setup and the latest
+sell setup stay on the chart together.
 
 ## How to use
 
@@ -42,8 +48,8 @@ below, Target above).
 
 Two alert conditions are included:
 
-- *New resistance / short setup* — fires when a new swing high forms.
-- *New support / long setup* — fires when a new swing low forms.
+- *Sell setup* — fires when a new swing high forms.
+- *Buy setup* — fires when a new swing low forms.
 
 ## Notes
 

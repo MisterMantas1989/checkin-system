@@ -51,15 +51,25 @@ var int   pvtOlderBar = na
 var float pvtNewerPx  = na
 var int   pvtNewerBar = na
 
-// active trade-setup drawings (single set, redrawn on each new signal)
-var line  sEntry = na
-var line  sSR    = na
-var box   sStop  = na
-var box   sTgt   = na
-var label lEntry = na
-var label lStop  = na
-var label lTgt   = na
-var label lSR    = na
+// active SELL setup (drawn at swing highs / resistance)
+var line  seEntry = na
+var line  seSR    = na
+var box   seStop  = na
+var box   seTgt   = na
+var label seLEntry = na
+var label seLStop  = na
+var label seLTgt   = na
+var label seLSR    = na
+
+// active BUY setup (drawn at swing lows / support)
+var line  buEntry = na
+var line  buSR    = na
+var box   buStop  = na
+var box   buTgt   = na
+var label buLEntry = na
+var label buLStop  = na
+var label buLTgt   = na
+var label buLSR    = na
 
 // active fibonacci drawings
 var line[]  fibLines  = array.new<line>()
@@ -70,19 +80,16 @@ ph = ta.pivothigh(high, pivLen, pivLen)
 pl = ta.pivotlow(low, pivLen, pivLen)
 
 newPivot   = false
-pivIsHigh  = false
 pivPrice   = float(na)
 pivBar     = int(na)
 
 if not na(ph)
     newPivot  := true
-    pivIsHigh := true
     pivPrice  := ph
     pivBar    := bar_index - pivLen
 
 if not na(pl)
     newPivot  := true
-    pivIsHigh := false
     pivPrice  := pl
     pivBar    := bar_index - pivLen
 
@@ -130,48 +137,62 @@ if showFib and newPivot and not na(pvtOlderPx) and not na(pvtNewerPx)
         array.push(fibLabels, lb)
 
 // ===================== Trade setup (entry / stop / target) ===================
-if showSetup and newPivot
-    // remove the previous setup
-    line.delete(sEntry)
-    line.delete(sSR)
-    box.delete(sStop)
-    box.delete(sTgt)
-    label.delete(lEntry)
-    label.delete(lStop)
-    label.delete(lTgt)
-    label.delete(lSR)
+// Both sides are maintained independently and stay on the chart at the same
+// time: the SELL setup is refreshed on every swing high, the BUY setup on every
+// swing low — same risk/reward logic, just mirrored.
+risk0 = atr * stopMult
+risk0 := risk0 <= 0 ? syminfo.mintick * 10 : risk0
 
-    entry = pivPrice
-    risk  = atr * stopMult
-    risk := risk <= 0 ? syminfo.mintick * 10 : risk
-    x1 = pivBar
-    x2 = pivBar + setupWidth
+// ---- SELL side (price rejected at resistance) ------------------------------
+if showSetup and not na(ph)
+    line.delete(seEntry)
+    line.delete(seSR)
+    box.delete(seStop)
+    box.delete(seTgt)
+    label.delete(seLEntry)
+    label.delete(seLStop)
+    label.delete(seLTgt)
+    label.delete(seLSR)
 
-    if pivIsHigh
-        // ---- SHORT setup (price rejected at resistance) -----------------
-        sl  = entry + risk
-        tgt = entry - risk * rrRatio
-        sStop  := box.new(x1, sl, x2, entry, border_color = color.new(color.red, 40),  bgcolor = cRisk)
-        sTgt   := box.new(x1, entry, x2, tgt, border_color = color.new(color.teal, 40), bgcolor = cReward)
-        sEntry := line.new(x1, entry, x2, entry, color = color.gray, width = 2)
-        sSR    := line.new(x1 - setupWidth, entry, x2, entry, color = cSR, width = 2, style = line.style_solid)
-        lSR    := label.new(x1, entry, "Resistance",  style = label.style_label_down, color = color.new(cSR, 70),         textcolor = color.white, size = size.small)
-        lEntry := label.new(x2, entry, "Entry Short", style = label.style_label_left, color = color.new(color.gray, 30),  textcolor = color.white, size = size.small)
-        lStop  := label.new(x2, sl,    "Stop-Loss",   style = label.style_label_left, color = color.new(color.red, 30),   textcolor = color.white, size = size.small)
-        lTgt   := label.new(x2, tgt,   "Target",      style = label.style_label_left, color = color.new(color.teal, 30),  textcolor = color.white, size = size.small)
-    else
-        // ---- LONG setup (price supported at demand) ---------------------
-        sl  = entry - risk
-        tgt = entry + risk * rrRatio
-        sStop  := box.new(x1, entry, x2, sl, border_color = color.new(color.red, 40),  bgcolor = cRisk)
-        sTgt   := box.new(x1, tgt, x2, entry, border_color = color.new(color.teal, 40), bgcolor = cReward)
-        sEntry := line.new(x1, entry, x2, entry, color = color.gray, width = 2)
-        sSR    := line.new(x1 - setupWidth, entry, x2, entry, color = color.green, width = 2, style = line.style_solid)
-        lSR    := label.new(x1, entry, "Support",    style = label.style_label_up,   color = color.new(color.green, 70), textcolor = color.white, size = size.small)
-        lEntry := label.new(x2, entry, "Entry Long", style = label.style_label_left, color = color.new(color.gray, 30),  textcolor = color.white, size = size.small)
-        lStop  := label.new(x2, sl,    "Stop-Loss",  style = label.style_label_left, color = color.new(color.red, 30),   textcolor = color.white, size = size.small)
-        lTgt   := label.new(x2, tgt,   "Target",     style = label.style_label_left, color = color.new(color.teal, 30),  textcolor = color.white, size = size.small)
+    entry = ph
+    x1 = bar_index - pivLen
+    x2 = x1 + setupWidth
+    sl  = entry + risk0
+    tgt = entry - risk0 * rrRatio
+    seStop  := box.new(x1, sl, x2, entry, border_color = color.new(color.red, 40),  bgcolor = cRisk)
+    seTgt   := box.new(x1, entry, x2, tgt, border_color = color.new(color.teal, 40), bgcolor = cReward)
+    seEntry := line.new(x1, entry, x2, entry, color = color.gray, width = 2)
+    seSR    := line.new(x1 - setupWidth, entry, x2, entry, color = cSR, width = 2, style = line.style_solid)
+    seLSR    := label.new(x1, entry, "Resistance", style = label.style_label_down, color = color.new(cSR, 70),        textcolor = color.white, size = size.small)
+    seLEntry := label.new(x2, entry, "Sell Entry", style = label.style_label_left, color = color.new(color.red, 30),  textcolor = color.white, size = size.small)
+    seLStop  := label.new(x2, sl,    "Stop-Loss",  style = label.style_label_left, color = color.new(color.red, 30),  textcolor = color.white, size = size.small)
+    seLTgt   := label.new(x2, tgt,   "Target",     style = label.style_label_left, color = color.new(color.teal, 30), textcolor = color.white, size = size.small)
+
+// ---- BUY side (price supported at demand) ----------------------------------
+if showSetup and not na(pl)
+    line.delete(buEntry)
+    line.delete(buSR)
+    box.delete(buStop)
+    box.delete(buTgt)
+    label.delete(buLEntry)
+    label.delete(buLStop)
+    label.delete(buLTgt)
+    label.delete(buLSR)
+
+    entry = pl
+    x1 = bar_index - pivLen
+    x2 = x1 + setupWidth
+    sl  = entry - risk0
+    tgt = entry + risk0 * rrRatio
+    buStop  := box.new(x1, entry, x2, sl, border_color = color.new(color.red, 40),  bgcolor = cRisk)
+    buTgt   := box.new(x1, tgt, x2, entry, border_color = color.new(color.teal, 40), bgcolor = cReward)
+    buEntry := line.new(x1, entry, x2, entry, color = color.gray, width = 2)
+    buSR    := line.new(x1 - setupWidth, entry, x2, entry, color = color.green, width = 2, style = line.style_solid)
+    buLSR    := label.new(x1, entry, "Support",   style = label.style_label_up,   color = color.new(color.green, 70), textcolor = color.white, size = size.small)
+    buLEntry := label.new(x2, entry, "Buy Entry", style = label.style_label_left, color = color.new(color.green, 30), textcolor = color.white, size = size.small)
+    buLStop  := label.new(x2, sl,    "Stop-Loss", style = label.style_label_left, color = color.new(color.red, 30),   textcolor = color.white, size = size.small)
+    buLTgt   := label.new(x2, tgt,   "Target",    style = label.style_label_left, color = color.new(color.teal, 30),  textcolor = color.white, size = size.small)
 
 // ===================== Alerts ================================================
-alertcondition(not na(ph), "New resistance / short setup", "A new swing high formed — short setup updated.")
-alertcondition(not na(pl), "New support / long setup",    "A new swing low formed — long setup updated.")
+alertcondition(not na(ph), "Sell setup", "A new swing high formed — sell setup updated.")
+alertcondition(not na(pl), "Buy setup",  "A new swing low formed — buy setup updated.")
