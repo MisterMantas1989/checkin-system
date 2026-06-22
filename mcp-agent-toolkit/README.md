@@ -1,17 +1,21 @@
 # MCP Agent Toolkit
 
-The five **MCP (Model Context Protocol) servers** from the video, ready to drop
+A set of **MCP (Model Context Protocol) servers**, ready to drop
 into Claude Desktop, Claude Code, Cursor, Windsurf, or VS Code. Once installed,
-your AI assistant can search the web, scrape websites, generate images, and
-drive a real browser — all from chat.
+your AI assistant can search the web, scrape websites, generate images,
+drive a real browser, and publish to Notion — all from chat.
 
 | Server | What it lets the AI do | Needs a key? |
 |---|---|---|
 | **Perplexity** (`server-perplexity-ask`) | Search the internet and get cited answers | ✅ `PERPLEXITY_API_KEY` |
 | **Firecrawl** (`firecrawl-mcp`) | Scrape / crawl / extract structured data from any website | ✅ `FIRECRAWL_API_KEY` |
 | **Glif** (`@glifxyz/glif-mcp-server`) | Generate images & run Glif AI workflows | ✅ `GLIF_API_TOKEN` |
+| **Notion** (`@notionhq/notion-mcp-server`) | Read/write Notion pages & databases (e.g. publish a proposal) | ✅ `NOTION_TOKEN` |
 | **Chrome DevTools** (`chrome-devtools-mcp`) | Drive & inspect a real Chrome browser (for coding agents) | ❌ |
 | **Playwright** (`@playwright/mcp`) | Automate any browser — click, type, navigate, screenshot | ❌ |
+
+Plus a curated shortlist of free REST APIs (enrichment, URL-safety, stock photos,
+export) in [`recipes/extra-apis.md`](./recipes/extra-apis.md).
 
 ---
 
@@ -33,6 +37,7 @@ Where to get each key:
 - **Perplexity** → https://www.perplexity.ai/settings/api
 - **Firecrawl** → https://www.firecrawl.dev/app/api-keys
 - **Glif** → https://glif.app/settings/api-tokens
+- **Notion** → https://www.notion.so/profile/integrations (then share the target page/database with the integration)
 
 After `generate-config.mjs` runs, look in **`config/generated/`** for files with
 your keys already filled in.
@@ -79,6 +84,7 @@ Restart your client and try prompts like:
 - *"Use Perplexity to find the latest news on MCP."*
 - *"Use Firecrawl to scrape the pricing page at example.com and list the plans."*
 - *"Use Glif to generate an image of a neon retro grid."*
+- *"Use Notion to create a page titled 'Test' under my workspace."*
 - *"Use Playwright to open google.com, search for 'model context protocol', and screenshot the first result."*
 
 If a server doesn't appear, check that its key is set in `.env`, re-run
@@ -92,6 +98,7 @@ Ready-made workflows that combine these servers — see [`recipes/`](./recipes/)
 - [Sales proposal](./recipes/sales-proposal.md) — research a prospect and draft a tailored proposal (Perplexity + Firecrawl)
 - [Content factory](./recipes/content-factory.md) — turn a topic into finished copy plus a matching generated image (Perplexity + Glif)
 - [Auto-tests & web automation](./recipes/playwright-testing.md) — drive a real browser to test flows, then save a Playwright test (Playwright + Chrome DevTools)
+- [Extra APIs](./recipes/extra-apis.md) — curated free APIs (enrichment, URL-safety, stock photos, export) that boost the recipes
 
 ## Repo layout
 
@@ -104,7 +111,8 @@ mcp-agent-toolkit/
 │   ├── lead-generation.md        # Perplexity + Firecrawl
 │   ├── sales-proposal.md         # Perplexity + Firecrawl
 │   ├── content-factory.md        # Perplexity + Glif
-│   └── playwright-testing.md     # Playwright + Chrome DevTools
+│   ├── playwright-testing.md     # Playwright + Chrome DevTools
+│   └── extra-apis.md             # Notion + curated free REST APIs
 ├── scripts/
 │   ├── setup.sh                  # one-shot setup
 │   └── generate-config.mjs       # fills keys → per-client config files

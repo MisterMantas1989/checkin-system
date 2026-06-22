@@ -67,6 +67,14 @@ Show me the result and the prompt you used so I can tweak it.
 > styled templates). Ask: *"List relevant Glif workflows for <use case> and run
 > the best fit"* to use a specialized one instead of raw image generation.
 
+**Need a real photo instead of a generated one?** Use a free stock API
+(Unsplash / Pexels / Pixabay) — see [extra-apis.md](./extra-apis.md):
+
+```text
+If a generated image doesn't fit, search Unsplash for a photo matching this post
+and return the image URL plus the required attribution.
+```
+
 ## Step 5 — Package for the channel
 
 ```text

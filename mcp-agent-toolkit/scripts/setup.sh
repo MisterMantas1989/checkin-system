@@ -18,7 +18,7 @@ else
 fi
 
 echo "▶ Pre-caching MCP server packages (so first launch is fast)…"
-for pkg in server-perplexity-ask firecrawl-mcp @glifxyz/glif-mcp-server chrome-devtools-mcp @playwright/mcp; do
+for pkg in server-perplexity-ask firecrawl-mcp @glifxyz/glif-mcp-server @notionhq/notion-mcp-server chrome-devtools-mcp @playwright/mcp; do
   echo "  • $pkg"
   npm view "$pkg" version >/dev/null 2>&1 || echo "    (could not reach npm for $pkg — skipping)"
 done
@@ -29,7 +29,7 @@ node scripts/generate-config.mjs
 cat <<'EOF'
 
 ✅ Done. Next steps:
-   1. Edit .env and paste in your keys (Perplexity / Firecrawl / Glif).
+   1. Edit .env and paste in your keys (Perplexity / Firecrawl / Glif / Notion).
    2. Re-run:  node scripts/generate-config.mjs
    3. Copy the right file from config/generated/ into your AI client
       (see the README for exact paths), then restart the client.
