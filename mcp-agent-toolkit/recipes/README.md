@@ -8,6 +8,7 @@ can paste straight into your AI client.
 |---|---|---|
 | [Lead generation](./lead-generation.md) | Find target companies and pull contact details into a clean list | Perplexity + Firecrawl |
 | [Sales proposal](./sales-proposal.md) | Research a prospect and draft a tailored sales proposal | Perplexity + Firecrawl |
+| [Content factory](./content-factory.md) | Turn a topic into finished copy plus a matching generated image | Perplexity + Glif |
 
 ## How to use a recipe
 
