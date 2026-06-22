@@ -1,0 +1,177 @@
+//@version=6
+// =============================================================================
+//  Smart Trade Setup  —  Order Blocks + Fibonacci + Risk/Reward
+// -----------------------------------------------------------------------------
+//  Rebuilds the indicator shown in the reference video (@tradersnotes.ir):
+//    1. Market structure via swing pivots
+//    2. Supply / Demand "order blocks" (the grey boxes around swing tips)
+//    3. A horizontal Support / Resistance line at the active level
+//    4. A Fibonacci retracement (0 .. 1) on the most recent swing leg
+//    5. A full trade setup with Entry, Stop-Loss zone (risk) and Target zone
+//       (reward) drawn as coloured boxes with labels, just like the clip:
+//       "Resistance" -> "Entry Short" -> "Stop-Loss" -> "Target".
+//
+//  Works on any symbol / timeframe. Add it to a TradingView chart as an
+//  overlay indicator.
+// =============================================================================
+indicator("Smart Trade Setup — OB + Fib + R/R", "Smart Trade Setup", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+// ===================== Inputs ================================================
+grpStr      = "Market structure"
+pivLen      = input.int(5, "Swing strength (pivot length)", minval = 1, group = grpStr, tooltip = "Higher = only larger swings are detected.")
+
+grpOB       = "Order blocks"
+showOB      = input.bool(true,  "Show order blocks", group = grpOB)
+obMax       = input.int(6,      "Max order blocks on chart", minval = 1, maxval = 30, group = grpOB)
+obWidth     = input.int(12,     "Order block width (bars)", minval = 1, group = grpOB)
+obColor     = input.color(color.new(color.gray, 55), "Fill", group = grpOB)
+obBorder    = input.color(color.new(color.gray, 20), "Border", group = grpOB)
+
+grpFib      = "Fibonacci retracement"
+showFib     = input.bool(true,  "Show Fibonacci on last swing", group = grpFib)
+fibExtend   = input.int(8,      "Extend right (bars)", minval = 0, group = grpFib)
+
+grpSetup    = "Trade setup (risk / reward)"
+showSetup   = input.bool(true,  "Show trade setup", group = grpSetup)
+rrRatio     = input.float(2.0,  "Reward : Risk", minval = 0.1, step = 0.1, group = grpSetup)
+stopMult    = input.float(1.0,  "Stop buffer (ATR ×)", minval = 0.0, step = 0.1, group = grpSetup)
+setupWidth  = input.int(40,     "Setup box width (bars)", minval = 5, group = grpSetup)
+cRisk       = input.color(color.new(color.red,  82), "Stop-Loss zone", group = grpSetup)
+cReward     = input.color(color.new(color.teal, 82), "Target zone", group = grpSetup)
+cSR         = input.color(color.red, "Support / Resistance line", group = grpSetup)
+
+// ===================== State =================================================
+atr = ta.atr(14)
+
+var box[] obBoxes = array.new<box>()
+
+// last two confirmed pivots (for the Fibonacci leg)
+var float pvtOlderPx = na
+var int   pvtOlderBar = na
+var float pvtNewerPx  = na
+var int   pvtNewerBar = na
+
+// active trade-setup drawings (single set, redrawn on each new signal)
+var line  sEntry = na
+var line  sSR    = na
+var box   sStop  = na
+var box   sTgt   = na
+var label lEntry = na
+var label lStop  = na
+var label lTgt   = na
+var label lSR    = na
+
+// active fibonacci drawings
+var line[]  fibLines  = array.new<line>()
+var label[] fibLabels = array.new<label>()
+
+// ===================== Pivot detection =======================================
+ph = ta.pivothigh(high, pivLen, pivLen)
+pl = ta.pivotlow(low, pivLen, pivLen)
+
+newPivot   = false
+pivIsHigh  = false
+pivPrice   = float(na)
+pivBar     = int(na)
+
+if not na(ph)
+    newPivot  := true
+    pivIsHigh := true
+    pivPrice  := ph
+    pivBar    := bar_index - pivLen
+
+if not na(pl)
+    newPivot  := true
+    pivIsHigh := false
+    pivPrice  := pl
+    pivBar    := bar_index - pivLen
+
+// shift the pivot history when a new one confirms
+if newPivot
+    pvtOlderPx  := pvtNewerPx
+    pvtOlderBar := pvtNewerBar
+    pvtNewerPx  := pivPrice
+    pvtNewerBar := pivBar
+
+// ===================== Order blocks ==========================================
+if showOB and newPivot
+    obTop = high[pivLen]
+    obBot = low[pivLen]
+    b = box.new(pivBar, obTop, pivBar + obWidth, obBot, border_color = obBorder, bgcolor = obColor)
+    array.push(obBoxes, b)
+    if array.size(obBoxes) > obMax
+        box.delete(array.shift(obBoxes))
+
+// ===================== Fibonacci retracement =================================
+fibLevels = array.from(0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
+fibColors = array.from(color.gray, color.maroon, color.orange, color.red, color.green, color.teal, color.gray)
+
+if showFib and newPivot and not na(pvtOlderPx) and not na(pvtNewerPx)
+    // clear previous fib
+    for ln in fibLines
+        line.delete(ln)
+    for lb in fibLabels
+        label.delete(lb)
+    array.clear(fibLines)
+    array.clear(fibLabels)
+
+    topPx = math.max(pvtOlderPx, pvtNewerPx)
+    botPx = math.min(pvtOlderPx, pvtNewerPx)
+    xL = math.min(pvtOlderBar, pvtNewerBar)
+    xR = math.max(pvtOlderBar, pvtNewerBar) + fibExtend
+
+    for i = 0 to array.size(fibLevels) - 1
+        lvl = array.get(fibLevels, i)
+        px  = botPx + (topPx - botPx) * lvl              // 1.0 at top, 0.0 at bottom
+        col = array.get(fibColors, i)
+        ln  = line.new(xL, px, xR, px, color = color.new(col, 25), width = 1)
+        lb  = label.new(xR, px, str.tostring(lvl, "0.###"), style = label.style_label_left, color = color.new(col, 70), textcolor = color.white, size = size.small)
+        array.push(fibLines, ln)
+        array.push(fibLabels, lb)
+
+// ===================== Trade setup (entry / stop / target) ===================
+if showSetup and newPivot
+    // remove the previous setup
+    line.delete(sEntry)
+    line.delete(sSR)
+    box.delete(sStop)
+    box.delete(sTgt)
+    label.delete(lEntry)
+    label.delete(lStop)
+    label.delete(lTgt)
+    label.delete(lSR)
+
+    entry = pivPrice
+    risk  = atr * stopMult
+    risk := risk <= 0 ? syminfo.mintick * 10 : risk
+    x1 = pivBar
+    x2 = pivBar + setupWidth
+
+    if pivIsHigh
+        // ---- SHORT setup (price rejected at resistance) -----------------
+        sl  = entry + risk
+        tgt = entry - risk * rrRatio
+        sStop  := box.new(x1, sl, x2, entry, border_color = color.new(color.red, 40),  bgcolor = cRisk)
+        sTgt   := box.new(x1, entry, x2, tgt, border_color = color.new(color.teal, 40), bgcolor = cReward)
+        sEntry := line.new(x1, entry, x2, entry, color = color.gray, width = 2)
+        sSR    := line.new(x1 - setupWidth, entry, x2, entry, color = cSR, width = 2, style = line.style_solid)
+        lSR    := label.new(x1, entry, "Resistance",  style = label.style_label_down, color = color.new(cSR, 70),         textcolor = color.white, size = size.small)
+        lEntry := label.new(x2, entry, "Entry Short", style = label.style_label_left, color = color.new(color.gray, 30),  textcolor = color.white, size = size.small)
+        lStop  := label.new(x2, sl,    "Stop-Loss",   style = label.style_label_left, color = color.new(color.red, 30),   textcolor = color.white, size = size.small)
+        lTgt   := label.new(x2, tgt,   "Target",      style = label.style_label_left, color = color.new(color.teal, 30),  textcolor = color.white, size = size.small)
+    else
+        // ---- LONG setup (price supported at demand) ---------------------
+        sl  = entry - risk
+        tgt = entry + risk * rrRatio
+        sStop  := box.new(x1, entry, x2, sl, border_color = color.new(color.red, 40),  bgcolor = cRisk)
+        sTgt   := box.new(x1, tgt, x2, entry, border_color = color.new(color.teal, 40), bgcolor = cReward)
+        sEntry := line.new(x1, entry, x2, entry, color = color.gray, width = 2)
+        sSR    := line.new(x1 - setupWidth, entry, x2, entry, color = color.green, width = 2, style = line.style_solid)
+        lSR    := label.new(x1, entry, "Support",    style = label.style_label_up,   color = color.new(color.green, 70), textcolor = color.white, size = size.small)
+        lEntry := label.new(x2, entry, "Entry Long", style = label.style_label_left, color = color.new(color.gray, 30),  textcolor = color.white, size = size.small)
+        lStop  := label.new(x2, sl,    "Stop-Loss",  style = label.style_label_left, color = color.new(color.red, 30),   textcolor = color.white, size = size.small)
+        lTgt   := label.new(x2, tgt,   "Target",     style = label.style_label_left, color = color.new(color.teal, 30),  textcolor = color.white, size = size.small)
+
+// ===================== Alerts ================================================
+alertcondition(not na(ph), "New resistance / short setup", "A new swing high formed — short setup updated.")
+alertcondition(not na(pl), "New support / long setup",    "A new swing low formed — long setup updated.")
