@@ -4,7 +4,7 @@ Research a prospect and turn that research into a tailored, ready-to-send sales
 proposal — the workflow demonstrated at the end of the reference video.
 
 **Servers needed:** Perplexity (`PERPLEXITY_API_KEY`), Firecrawl (`FIRECRAWL_API_KEY`)
-**Optional:** a Google Docs / Notion MCP server to publish the final document.
+**Optional:** Notion (`NOTION_TOKEN`, already in `config/mcp-servers.json`) to publish the final document.
 
 **Time:** ~10 minutes · **Output:** a structured proposal you can edit and send
 
@@ -79,11 +79,21 @@ throughout.
 - Output as clean Markdown I can drop into a doc.
 ```
 
-**Publish it:** if you have a Google Docs or Notion MCP server connected, add:
+**Publish it to Notion** (the Notion MCP server is already configured):
 
 ```text
-Create this as a new Google Doc titled "<Prospect> — Proposal" and share the link.
+Use Notion to create a new page titled "<Prospect> — Proposal" under <my
+proposals page/database>, with the proposal content formatted as headings,
+paragraphs and a pricing table. Share the page URL.
 ```
+
+> First time: create a Notion integration at
+> https://www.notion.so/profile/integrations, put its token in `.env` as
+> `NOTION_TOKEN`, and **share the target page/database with the integration**
+> inside Notion (⋯ menu → Connections) — otherwise the agent can't see it.
+>
+> Prefer a PDF/Word file instead? See **CloudConvert** in
+> [extra-apis.md](./extra-apis.md).
 
 ---
 

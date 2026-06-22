@@ -10,6 +10,7 @@ can paste straight into your AI client.
 | [Sales proposal](./sales-proposal.md) | Research a prospect and draft a tailored sales proposal | Perplexity + Firecrawl |
 | [Content factory](./content-factory.md) | Turn a topic into finished copy plus a matching generated image | Perplexity + Glif |
 | [Auto-tests & web automation](./playwright-testing.md) | Drive a real browser to test flows, then save a Playwright test | Playwright (+ Chrome DevTools) |
+| [Extra APIs](./extra-apis.md) | Curated free APIs (enrichment, URL-safety, stock photos, export) that boost the recipes | Notion + REST APIs |
 
 ## How to use a recipe
 

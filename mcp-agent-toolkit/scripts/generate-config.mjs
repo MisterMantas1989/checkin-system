@@ -48,6 +48,7 @@ const missing = Object.entries({
   PERPLEXITY_API_KEY: "perplexity",
   FIRECRAWL_API_KEY: "firecrawl",
   GLIF_API_TOKEN: "glif",
+  NOTION_TOKEN: "notion",
 }).filter(([k]) => !env[k]).map(([, s]) => s);
 
 console.log("✓ Wrote config/generated/{claude-cursor-windsurf.json, vscode-mcp.json, claude-code-cli.sh}");
