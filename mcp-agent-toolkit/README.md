@@ -84,6 +84,13 @@ Restart your client and try prompts like:
 If a server doesn't appear, check that its key is set in `.env`, re-run
 `node scripts/generate-config.mjs`, and fully restart the client.
 
+## Recipes
+
+Ready-made workflows that combine these servers — see [`recipes/`](./recipes/):
+
+- [Lead generation](./recipes/lead-generation.md) — find target companies and pull contact details into a list (Perplexity + Firecrawl)
+- [Sales proposal](./recipes/sales-proposal.md) — research a prospect and draft a tailored proposal (Perplexity + Firecrawl)
+
 ## Repo layout
 
 ```
@@ -91,6 +98,9 @@ mcp-agent-toolkit/
 ├── config/
 │   ├── mcp-servers.json          # canonical template (uses ${ENV_VARS})
 │   └── generated/                # produced by generate-config.mjs (gitignored)
+├── recipes/
+│   ├── lead-generation.md        # Perplexity + Firecrawl
+│   └── sales-proposal.md         # Perplexity + Firecrawl
 ├── scripts/
 │   ├── setup.sh                  # one-shot setup
 │   └── generate-config.mjs       # fills keys → per-client config files
