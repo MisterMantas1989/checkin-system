@@ -91,6 +91,7 @@ Ready-made workflows that combine these servers — see [`recipes/`](./recipes/)
 - [Lead generation](./recipes/lead-generation.md) — find target companies and pull contact details into a list (Perplexity + Firecrawl)
 - [Sales proposal](./recipes/sales-proposal.md) — research a prospect and draft a tailored proposal (Perplexity + Firecrawl)
 - [Content factory](./recipes/content-factory.md) — turn a topic into finished copy plus a matching generated image (Perplexity + Glif)
+- [Auto-tests & web automation](./recipes/playwright-testing.md) — drive a real browser to test flows, then save a Playwright test (Playwright + Chrome DevTools)
 
 ## Repo layout
 
@@ -102,7 +103,8 @@ mcp-agent-toolkit/
 ├── recipes/
 │   ├── lead-generation.md        # Perplexity + Firecrawl
 │   ├── sales-proposal.md         # Perplexity + Firecrawl
-│   └── content-factory.md        # Perplexity + Glif
+│   ├── content-factory.md        # Perplexity + Glif
+│   └── playwright-testing.md     # Playwright + Chrome DevTools
 ├── scripts/
 │   ├── setup.sh                  # one-shot setup
 │   └── generate-config.mjs       # fills keys → per-client config files
