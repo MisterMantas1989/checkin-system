@@ -1,0 +1,384 @@
+//@version=6
+// S/R zones (strength %, role-flip, break/retest) + liquidity (equal highs/lows + sweeps) + market structure (BOS/CHoCH).
+// Manual-trading visual aid. "Strength %" = touch frequency vs the strongest zone — context, NOT a probability the level holds.
+indicator("S/R + Liquidity + Structure (manual aid)", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500)
+
+// ====== Inputs ======
+gSR = "Support / Resistance"
+pivLen       = input.int(10,    "Pivot lookback",            minval=2,    group=gSR, tooltip="Bars left/right to confirm an S/R swing pivot. Higher = fewer, weightier levels (more lag to confirm).")
+mergeATR     = input.float(0.5, "Zone merge distance (ATR)", minval=0.1,  step=0.1,  group=gSR, tooltip="New pivots within this many ATR of a zone merge into it and count as another touch.")
+zoneHalfATR  = input.float(0.35,"Zone half-height (ATR)",    minval=0.05, step=0.05, group=gSR)
+maxZones     = input.int(5,     "Max zones shown",           minval=1,    maxval=20, group=gSR, tooltip="Keeps only the N strongest zones (by touch count).")
+nearPct      = input.float(15.0,"Hide levels beyond % of price", minval=1, step=1, group=gSR, tooltip="Removes zones and liquidity further than this % from the current price — keeps the chart scaled to the action and uncluttered.")
+showStrength = input.bool(true, "Show strength %",           group=gSR)
+breakDecay   = input.float(0.5, "Strength x on break",       minval=0.1, maxval=1.0, step=0.05, group=gSR, tooltip="When the level is broken, its strength is multiplied by this — a broken level is worth less.")
+minStrength  = input.float(1.0, "Auto-remove zones below %", minval=0.0, step=0.5, group=gSR, tooltip="A zone whose strength % decays below this is removed (a level broken so often it's spent). Set 0 to keep all zones.")
+
+gBR = "Break / Retest"
+brkBufATR    = input.float(0.10,"Break buffer (ATR)",        minval=0.0,  step=0.05, group=gBR, tooltip="Close must clear the zone centre by this many ATR to count as a break (filters noise wicks).")
+retestBars   = input.int(50,    "Retest window (bars)",      minval=1,    group=gBR)
+showBreak    = input.bool(true, "Show break labels",         group=gBR)
+showRetest   = input.bool(true, "Show retest labels",        group=gBR)
+showReclaim  = input.bool(true, "Mark sweep-reclaim",        group=gBR, tooltip="Marks a candle that wicked BEYOND an S/R zone (or liquidity pool) but closed back inside — a completed sweep / stop-hunt that reversed. Reactive (a closed bar), NOT a forecast.")
+
+gLQ = "Liquidity (equal highs/lows)"
+showLiq      = input.bool(true, "Show liquidity",            group=gLQ)
+eqTolATR     = input.float(0.15,"Equal-level tolerance (ATR)",minval=0.01,step=0.05, group=gLQ, tooltip="Two swing highs (or lows) within this many ATR count as equal = a resting-liquidity pool.")
+maxLiq       = input.int(4,     "Max liquidity lines",       minval=1,    maxval=20, group=gLQ)
+showSweep    = input.bool(true, "Mark sweeps",               group=gLQ)
+eqPivots     = input.int(5,     "Equal-level pivot lookback",minval=2,    maxval=20, group=gLQ, tooltip="Compare each new swing pivot against the last N pivots (not only the immediately previous one) when hunting equal highs/lows.")
+
+gMS = "Market Structure"
+showMS       = input.bool(true, "Show BOS / CHoCH",          group=gMS)
+msLen        = input.int(10,    "Structure swing length",    minval=2,    group=gMS)
+
+gSess = "Sessions (high/low lines)"
+showSessions = input.bool(true,  "Show session high/low", group=gSess)
+sessTz       = input.string("Europe/Stockholm", "Session timezone", group=gSess, tooltip="Sessions are evaluated in this timezone (DST handled automatically). Default = Stockholm.")
+sessLabels   = input.bool(true,  "Session labels",        group=gSess, tooltip="Off = pure lines, no text.")
+sessAsiaOn   = input.bool(true,  "Asia",     inline="sA", group=gSess)
+sessAsia     = input.session("0000-0900", "", inline="sA", group=gSess)
+sessLonOn    = input.bool(true,  "London",   inline="sL", group=gSess)
+sessLon      = input.session("0900-1730", "", inline="sL", group=gSess)
+sessNyOn     = input.bool(true,  "New York", inline="sN", group=gSess)
+sessNy       = input.session("1430-2200", "", inline="sN", group=gSess)
+sessColA     = input.color(color.new(#f5b820, 0), "Asia",   inline="sc", group=gSess)
+sessColL     = input.color(color.new(#27a0f5, 0), "London", inline="sc", group=gSess)
+sessColN     = input.color(color.new(#e055c0, 0), "NY",     inline="sc", group=gSess)
+
+gC = "Colors"
+supBg = input.color(color.new(color.teal,   82), "Support fill",    group=gC)
+resBg = input.color(color.new(color.maroon, 82), "Resistance fill", group=gC)
+liqCol= input.color(color.new(color.orange, 0),  "Liquidity",       group=gC)
+
+// ====== Shared ======
+atr  = ta.atr(14)
+phSR = ta.pivothigh(pivLen, pivLen)
+plSR = ta.pivotlow(pivLen,  pivLen)
+
+// ====== S/R ZONES ======
+type Zone
+    float price
+    int   touch
+    float strength  // relativ touch-frekvens vs starkaste zonen (× break-straff)
+    float brk       // break-straff (1.0 = aldrig bruten, ×breakDecay per break)
+    bool  above     // price was above last bar => zone acts as support
+    box   bx
+    label lb
+    int   flip      // bar_index of last break, -1 = none pending
+    bool  reDone    // retest already labelled since last break
+
+var array<Zone> zones = array.new<Zone>()
+
+f_register(float _p) =>
+    if math.abs(_p - close) <= close * nearPct / 100.0   // only register zones near price; never push a far zone the cull would just remove
+        int   _i = -1
+        float _b = atr * mergeATR
+        int   _n = array.size(zones)
+        if _n > 0
+            for k = 0 to _n - 1
+                float _d = math.abs(array.get(zones, k).price - _p)
+                if _d <= _b
+                    _b := _d
+                    _i := k
+        if _i >= 0
+            Zone z = array.get(zones, _i)
+            z.touch := z.touch + 1
+            z.price := (z.price * (z.touch - 1) + _p) / z.touch
+        else
+            float _hh = atr * zoneHalfATR
+            array.push(zones, Zone.new(_p, 1, 100.0, 1.0, close > _p, box.new(bar_index - pivLen, _p + _hh, bar_index, _p - _hh, border_width=1, border_color=color.new(color.gray, 40)), label.new(bar_index, _p, "", style=label.style_label_left, size=size.small, color=color.new(color.gray, 100)), -1, false))
+    true
+
+f_prune() =>
+    while array.size(zones) > maxZones
+        int _mi = 0
+        int _mt = array.get(zones, 0).touch
+        for k = 1 to array.size(zones) - 1
+            if array.get(zones, k).touch < _mt
+                _mt := array.get(zones, k).touch
+                _mi := k
+        Zone z = array.get(zones, _mi)
+        box.delete(z.bx)
+        label.delete(z.lb)
+        array.remove(zones, _mi)
+
+if not na(phSR)
+    f_register(phSR)
+    f_prune()
+if not na(plSR)
+    f_register(plSR)
+    f_prune()
+
+// strength % = denna zons touch-frekvens vs starkaste zonen, × break-straff
+// (matchar filens egen definition; samstämmig med f_prune som behåller flest touches)
+if array.size(zones) > 0
+    int _maxT = 1
+    for k = 0 to array.size(zones) - 1
+        _maxT := math.max(_maxT, array.get(zones, k).touch)
+    for k = 0 to array.size(zones) - 1
+        Zone z = array.get(zones, k)
+        z.strength := z.touch / _maxT * 100.0 * z.brk
+
+// proximity cull: drop zones too far from price (keeps the chart scaled and clean)
+float nearAbs = close * nearPct / 100.0
+if array.size(zones) > 0
+    for k = array.size(zones) - 1 to 0
+        Zone zc = array.get(zones, k)
+        if math.abs(zc.price - close) > nearAbs
+            box.delete(zc.bx)
+            label.delete(zc.lb)
+            array.remove(zones, k)
+
+// strength-floor cull: drop zones decayed below the floor (spent / broken-to-death levels)
+if minStrength > 0 and array.size(zones) > 0
+    for k = array.size(zones) - 1 to 0
+        Zone zs = array.get(zones, k)
+        if zs.strength < minStrength
+            box.delete(zs.bx)
+            label.delete(zs.lb)
+            array.remove(zones, k)
+
+float hhNow = atr * zoneHalfATR
+float buf   = atr * brkBufATR
+if array.size(zones) > 0
+    for k = 0 to array.size(zones) - 1
+        Zone z = array.get(zones, k)
+        // break → flip role (only on a confirmed close, so labels don't repaint intrabar)
+        if z.above and close < z.price - buf and barstate.isconfirmed
+            z.above  := false
+            z.flip   := bar_index
+            z.reDone := false
+            z.brk    := z.brk * breakDecay
+            if showBreak
+                label.new(bar_index, low, "Brk Sup", style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny)
+        else if (not z.above) and close > z.price + buf and barstate.isconfirmed
+            z.above  := true
+            z.flip   := bar_index
+            z.reDone := false
+            z.brk    := z.brk * breakDecay
+            if showBreak
+                label.new(bar_index, high, "Brk Res", style=label.style_label_down, color=color.new(color.green, 0), textcolor=color.white, size=size.tiny)
+        else
+            // sweep-reclaim: a wick pierced BEYOND the whole zone but the bar closed back inside (a stop-hunt that reversed).
+            if showReclaim and barstate.isconfirmed
+                if z.above and low < z.price - hhNow
+                    label.new(bar_index, low, "SR▲", style=label.style_label_up, color=color.new(color.teal, 0), textcolor=color.white, size=size.tiny, tooltip="Swept below support, closed back inside. A stop just under the zone would have been hunted; this is where a reclaim long sat.")
+                    alert("Sweep-reclaim ▲ stod " + syminfo.ticker + " @ " + str.tostring(z.price), alert.freq_once_per_bar_close)
+                else if (not z.above) and high > z.price + hhNow
+                    label.new(bar_index, high, "SR▼", style=label.style_label_down, color=color.new(color.maroon, 0), textcolor=color.white, size=size.tiny, tooltip="Swept above resistance, closed back inside. A stop just over the zone would have been hunted; this is where a reclaim short sat.")
+                    alert("Sweep-reclaim ▼ motstand " + syminfo.ticker + " @ " + str.tostring(z.price), alert.freq_once_per_bar_close)
+            if showRetest and barstate.isconfirmed and z.flip >= 0 and not z.reDone and (bar_index - z.flip) >= 1 and (bar_index - z.flip) <= retestBars
+                if math.abs(close - z.price) <= hhNow   // close must land in the zone, not just a wick crossing it on a breakout
+                    if z.above
+                        label.new(bar_index, low, "RT Sup", style=label.style_label_up, color=color.new(color.teal, 0), textcolor=color.white, size=size.tiny)
+                    else
+                        label.new(bar_index, high, "RT Res", style=label.style_label_down, color=color.new(color.maroon, 0), textcolor=color.white, size=size.tiny)
+                    z.reDone := true
+        // visuals (reused per zone)
+        box.set_top(z.bx,          z.price + hhNow)
+        box.set_bottom(z.bx,       z.price - hhNow)
+        box.set_right(z.bx,        bar_index + 8)
+        box.set_bgcolor(z.bx,      z.above ? supBg : resBg)
+        box.set_border_color(z.bx, color.new(z.above ? color.teal : color.maroon, 35))
+        label.set_xy(z.lb,         bar_index + 8, z.price)
+        label.set_text(z.lb,       showStrength ? str.tostring(math.round(z.strength)) + "%" : "")
+        label.set_textcolor(z.lb,  z.above ? color.teal : color.maroon)
+
+// ====== LIQUIDITY (equal highs / lows) ======
+type Liq
+    float price
+    bool  buyside    // true = above (equal highs); false = below (equal lows)
+    box   bx         // cluster marker (rectangle)
+    line  ln         // projection extending right
+    bool  swept
+
+var array<Liq>   liqs  = array.new<Liq>()
+var array<float> phBuf = array.new<float>()   // last N confirmed pivot highs
+var array<float> plBuf = array.new<float>()   // last N confirmed pivot lows
+
+f_pruneLiq() =>
+    while array.size(liqs) > maxLiq
+        Liq q = array.get(liqs, 0)
+        box.delete(q.bx)
+        line.delete(q.ln)
+        array.remove(liqs, 0)
+
+f_liqExists(float _lvl, float _tol) =>
+    bool _f = false
+    if array.size(liqs) > 0
+        for k = 0 to array.size(liqs) - 1
+            if math.abs(array.get(liqs, k).price - _lvl) <= _tol
+                _f := true
+    _f
+
+if showLiq
+    float _tol = atr * eqTolATR
+    if not na(phSR)
+        // match against the last N pivot highs, not just the previous one
+        float _hm = na
+        if array.size(phBuf) > 0
+            for k = 0 to array.size(phBuf) - 1
+                if math.abs(array.get(phBuf, k) - phSR) <= _tol
+                    _hm := array.get(phBuf, k)
+        if not na(_hm)
+            float _lvl = math.max(phSR, _hm)
+            if not f_liqExists(_lvl, _tol)
+                float _bh = atr * eqTolATR
+                box  _bx = box.new(bar_index - pivLen, _lvl + _bh, bar_index - 1, _lvl - _bh, border_color=color.new(liqCol, 30), border_width=1, bgcolor=color.new(liqCol, 82))
+                line _ln = line.new(bar_index - 1, _lvl, bar_index, _lvl, color=liqCol, width=1, style=line.style_dotted)
+                array.push(liqs, Liq.new(_lvl, true, _bx, _ln, false))
+                f_pruneLiq()
+        array.push(phBuf, phSR)
+        while array.size(phBuf) > eqPivots
+            array.remove(phBuf, 0)
+    if not na(plSR)
+        float _lm = na
+        if array.size(plBuf) > 0
+            for k = 0 to array.size(plBuf) - 1
+                if math.abs(array.get(plBuf, k) - plSR) <= _tol
+                    _lm := array.get(plBuf, k)
+        if not na(_lm)
+            float _lvl = math.min(plSR, _lm)
+            if not f_liqExists(_lvl, _tol)
+                float _bh = atr * eqTolATR
+                box  _bx = box.new(bar_index - pivLen, _lvl + _bh, bar_index - 1, _lvl - _bh, border_color=color.new(liqCol, 30), border_width=1, bgcolor=color.new(liqCol, 82))
+                line _ln = line.new(bar_index - 1, _lvl, bar_index, _lvl, color=liqCol, width=1, style=line.style_dotted)
+                array.push(liqs, Liq.new(_lvl, false, _bx, _ln, false))
+                f_pruneLiq()
+        array.push(plBuf, plSR)
+        while array.size(plBuf) > eqPivots
+            array.remove(plBuf, 0)
+
+// proximity cull for liquidity (same rule as zones)
+if array.size(liqs) > 0
+    for k = array.size(liqs) - 1 to 0
+        Liq qc = array.get(liqs, k)
+        if math.abs(qc.price - close) > nearAbs
+            box.delete(qc.bx)
+            line.delete(qc.ln)
+            array.remove(liqs, k)
+
+if array.size(liqs) > 0
+    for k = 0 to array.size(liqs) - 1
+        Liq q = array.get(liqs, k)
+        line.set_x2(q.ln, bar_index)
+        if not q.swept and barstate.isconfirmed
+            bool _hit = q.buyside ? high > q.price : low < q.price
+            if _hit
+                q.swept := true
+                line.set_style(q.ln, line.style_dashed)
+                line.set_color(q.ln, color.new(liqCol, 55))
+                box.set_bgcolor(q.bx, color.new(liqCol, 92))
+                box.set_border_color(q.bx, color.new(liqCol, 60))
+                if showSweep
+                    bool _reclaim = q.buyside ? close < q.price : close > q.price
+                    if _reclaim
+                        label.new(bar_index, q.price, q.buyside ? "sweep▼" : "sweep▲", style=q.buyside ? label.style_label_down : label.style_label_up, color=color.new(liqCol, 0), textcolor=color.white, size=size.tiny, tooltip="Pool swept and REJECTED — price wicked through and closed back. The actionable kind: where the reversal/reclaim entry sat.")
+                        alert("Liq sweep-reclaim " + (q.buyside ? "▼ " : "▲ ") + syminfo.ticker + " @ " + str.tostring(q.price), alert.freq_once_per_bar_close)
+                    else
+                        label.new(bar_index, q.price, "swept", style=q.buyside ? label.style_label_down : label.style_label_up, color=color.new(liqCol, 60), textcolor=color.white, size=size.tiny, tooltip="Pool swept and ACCEPTED — price closed through the level. More likely a real break than a reversal.")
+
+// ====== MARKET STRUCTURE (BOS / CHoCH) ======
+var float msHigh  = na    // most extreme unbroken swing high
+var float msLow   = na    // most extreme unbroken swing low
+var int   msTrend = 0     // 1 bull, -1 bear, 0 none
+
+phMS = ta.pivothigh(msLen, msLen)
+plMS = ta.pivotlow(msLen,  msLen)
+// behall den mest EXTREMA obrutna swingen — skriv inte over en hogre high med en lagre
+if not na(phMS)
+    msHigh := na(msHigh) ? phMS : math.max(msHigh, phMS)
+if not na(plMS)
+    msLow := na(msLow) ? plMS : math.min(msLow, plMS)
+
+if showMS
+    if not na(msHigh) and close > msHigh and barstate.isconfirmed
+        bool _choch = msTrend == -1
+        label.new(bar_index, msHigh, _choch ? "CHoCH" : "BOS", style=label.style_label_down, color=_choch ? color.new(color.fuchsia, 0) : color.new(color.green, 0), textcolor=color.white, size=size.small)
+        line.new(bar_index, msHigh, bar_index + 10, msHigh, color=_choch ? color.new(color.fuchsia, 0) : color.new(color.green, 0), width=1)
+        alert((_choch ? "CHoCH" : "BOS") + " ▲ " + syminfo.ticker, alert.freq_once_per_bar_close)
+        msTrend := 1
+        msHigh  := na
+    if not na(msLow) and close < msLow and barstate.isconfirmed
+        bool _choch = msTrend == 1
+        label.new(bar_index, msLow, _choch ? "CHoCH" : "BOS", style=label.style_label_up, color=_choch ? color.new(color.fuchsia, 0) : color.new(color.red, 0), textcolor=color.white, size=size.small)
+        line.new(bar_index, msLow, bar_index + 10, msLow, color=_choch ? color.new(color.fuchsia, 0) : color.new(color.red, 0), width=1)
+        alert((_choch ? "CHoCH" : "BOS") + " ▼ " + syminfo.ticker, alert.freq_once_per_bar_close)
+        msTrend := -1
+        msLow   := na
+
+// ====== SESSION (previous session's high / low) ======
+// During a session, show the PREVIOUS (just-closed) session's range as reference:
+//   London active -> Asia's lines | NY active -> London's lines | Asia active -> NY's lines.
+var float aHi = na
+var float aLo = na
+var float lHi = na
+var float lLo = na
+var float nHi = na
+var float nLo = na
+var bool  aAct = false
+var bool  lAct = false
+var bool  nAct = false
+var line  dHiLn = na
+var line  dLoLn = na
+var label dHiLb = na
+var label dLoLb = na
+
+if showSessions
+    bool inAsia = sessAsiaOn and not na(time(timeframe.period, sessAsia, sessTz))
+    bool inLon  = sessLonOn  and not na(time(timeframe.period, sessLon,  sessTz))
+    bool inNy   = sessNyOn   and not na(time(timeframe.period, sessNy,   sessTz))
+
+    // accumulate each session's own range (reset at its own open)
+    if inAsia
+        aHi := aAct ? math.max(aHi, high) : high
+        aLo := aAct ? math.min(aLo, low)  : low
+    if inLon
+        lHi := lAct ? math.max(lHi, high) : high
+        lLo := lAct ? math.min(lLo, low)  : low
+    if inNy
+        nHi := nAct ? math.max(nHi, high) : high
+        nLo := nAct ? math.min(nLo, low)  : low
+
+    // on a new session open, take the predecessor's range for display
+    float  pHi = na
+    float  pLo = na
+    color  pCol = na
+    string pNm  = ""
+    bool   opened = false
+    if inAsia and not aAct        // Asia opened -> show NY
+        pHi := nHi
+        pLo := nLo
+        pCol := sessColN
+        pNm := "NY"
+        opened := true
+    if inLon and not lAct         // London opened -> show Asia
+        pHi := aHi
+        pLo := aLo
+        pCol := sessColA
+        pNm := "Asia"
+        opened := true
+    if inNy and not nAct          // NY opened -> show London
+        pHi := lHi
+        pLo := lLo
+        pCol := sessColL
+        pNm := "London"
+        opened := true
+
+    if opened and not na(pHi)
+        if not na(dHiLn)
+            line.delete(dHiLn)
+            line.delete(dLoLn)
+        if not na(dHiLb)
+            label.delete(dHiLb)
+            label.delete(dLoLb)
+        dHiLn := line.new(bar_index, pHi, bar_index + 1, pHi, color=pCol, width=1, extend=extend.right)
+        dLoLn := line.new(bar_index, pLo, bar_index + 1, pLo, color=pCol, width=1, extend=extend.right)
+        if sessLabels
+            dHiLb := label.new(bar_index, pHi, pNm + " H", style=label.style_none, textcolor=pCol, size=size.tiny)
+            dLoLb := label.new(bar_index, pLo, pNm + " L", style=label.style_none, textcolor=pCol, size=size.tiny)
+
+    aAct := inAsia
+    lAct := inLon
+    nAct := inNy
