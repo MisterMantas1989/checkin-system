@@ -54,7 +54,7 @@ var float lastHigh    = na
 var int   lastHighBar = na
 var float lastLow     = na
 var int   lastLowBar  = na
-var bool  lastIsHigh  = na
+var int   lastDir     = 0   // 0 = none, 1 = sell (swing high), -1 = buy (swing low)
 
 // two most recent pivots (for the Fibonacci leg)
 var float prevSig    = na
@@ -80,7 +80,7 @@ pl = ta.pivotlow(low, pivLen, pivLen)
 if not na(ph)
     lastHigh    := ph
     lastHighBar := bar_index - pivLen
-    lastIsHigh  := true
+    lastDir     := 1
     prevSig     := lastSig
     prevSigBar  := lastSigBar
     lastSig     := ph
@@ -89,7 +89,7 @@ if not na(ph)
 if not na(pl)
     lastLow    := pl
     lastLowBar := bar_index - pivLen
-    lastIsHigh := false
+    lastDir    := -1
     prevSig    := lastSig
     prevSigBar := lastSigBar
     lastSig    := pl
@@ -171,10 +171,11 @@ if barstate.islast
         risk = atr * stopMult
         risk := risk <= 0 ? syminfo.mintick * 10 : risk
         fromX = bar_index
-        if setupMode == "Latest only" and not na(lastIsHigh)
-            entry = lastIsHigh ? lastHigh : lastLow
+        if setupMode == "Latest only" and lastDir != 0
+            isSell = lastDir == 1
+            entry = isSell ? lastHigh : lastLow
             if not na(entry)
-                drawSetup(lastIsHigh, entry, fromX, rightX, risk)
+                drawSetup(isSell, entry, fromX, rightX, risk)
         else if setupMode == "Both sides"
             if not na(lastHigh)
                 drawSetup(true, lastHigh, fromX, rightX, risk)
