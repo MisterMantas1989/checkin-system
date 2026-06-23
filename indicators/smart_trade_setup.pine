@@ -35,7 +35,7 @@ g_fib = "Fibonacci"
 showFib = input.bool(false, "Show Fibonacci (last swing)", group = g_fib)
 
 g_set = "Trade setup (risk / reward)"
-setupMode  = input.string("Latest only", "Show setup", options = ["Latest only", "Both sides", "Off"], group = g_set)
+setupMode  = input.string("Auto (nearest level)", "Show setup", options = ["Auto (nearest level)", "Both sides", "Off"], group = g_set)
 rrRatio    = input.float(2.0, "Reward : Risk", minval = 0.1, step = 0.1, group = g_set)
 stopMult   = input.float(1.0, "Stop buffer (ATR ×)", minval = 0.0, step = 0.1, group = g_set)
 setupFwd   = input.int(30, "Setup width (bars, drawn to the right)", minval = 5, maxval = 300, group = g_set)
@@ -54,7 +54,6 @@ var float lastHigh    = na
 var int   lastHighBar = na
 var float lastLow     = na
 var int   lastLowBar  = na
-var int   lastDir     = 0   // 0 = none, 1 = sell (swing high), -1 = buy (swing low)
 
 // two most recent pivots (for the Fibonacci leg)
 var float prevSig    = na
@@ -80,7 +79,6 @@ pl = ta.pivotlow(low, pivLen, pivLen)
 if not na(ph)
     lastHigh    := ph
     lastHighBar := bar_index - pivLen
-    lastDir     := 1
     prevSig     := lastSig
     prevSigBar  := lastSigBar
     lastSig     := ph
@@ -89,7 +87,6 @@ if not na(ph)
 if not na(pl)
     lastLow    := pl
     lastLowBar := bar_index - pivLen
-    lastDir    := -1
     prevSig    := lastSig
     prevSigBar := lastSigBar
     lastSig    := pl
@@ -171,15 +168,22 @@ if barstate.islast
         risk = atr * stopMult
         risk := risk <= 0 ? syminfo.mintick * 10 : risk
         fromX = bar_index
-        if setupMode == "Latest only" and lastDir != 0
-            isSell = lastDir == 1
-            entry = isSell ? lastHigh : lastLow
-            if not na(entry)
-                drawSetup(isSell, entry, fromX, rightX, risk)
-        else if setupMode == "Both sides"
-            if not na(lastHigh)
+        haveH = not na(lastHigh)
+        haveL = not na(lastLow)
+        if setupMode == "Both sides"
+            if haveH
                 drawSetup(true, lastHigh, fromX, rightX, risk)
-            if not na(lastLow)
+            if haveL
+                drawSetup(false, lastLow, fromX, rightX, risk)
+        else  // Auto: anchor on the S/R level price is closest to
+            if haveH and haveL
+                if math.abs(close - lastHigh) <= math.abs(close - lastLow)
+                    drawSetup(true, lastHigh, fromX, rightX, risk)
+                else
+                    drawSetup(false, lastLow, fromX, rightX, risk)
+            else if haveH
+                drawSetup(true, lastHigh, fromX, rightX, risk)
+            else if haveL
                 drawSetup(false, lastLow, fromX, rightX, risk)
 
 // ===================== Alerts ================================================

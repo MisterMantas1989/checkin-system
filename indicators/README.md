@@ -24,9 +24,10 @@ To keep the chart clean (the earlier version covered the candles):
 
 - The trade setup is **projected to the right of the last candle** — like the
   TradingView position tool — so it never paints over price history.
-- Only the **latest** signal is shown by default. Switch **Show setup** to
-  *Both sides* to display the latest buy **and** sell setup together, or *Off*
-  to hide it.
+- **Auto** mode anchors the setup on the S/R level the price is **closest to**
+  (a sell at the nearest resistance above, or a buy at the nearest support
+  below) — a meaningful pending order, not a stale level price already left.
+  Switch **Show setup** to *Both sides* for both, or *Off* to hide it.
 - Zones are highly transparent, lines are thin, and every level is labelled
   with its price.
 - **Fibonacci is off by default** (it was the noisiest element); order blocks
@@ -49,7 +50,7 @@ Same mirrored logic as before: a swing **high** drives the **Sell** setup
 - **Order blocks** – toggle, how many to keep, transparency.
 - **Support / Resistance** – toggle the thin S/R lines.
 - **Fibonacci** – toggle (off by default).
-- **Trade setup** – **Show setup** (*Latest only* / *Both sides* / *Off*),
+- **Trade setup** – **Show setup** (*Auto (nearest level)* / *Both sides* / *Off*),
   **Reward : Risk** ratio, **Stop buffer (ATR ×)** for the stop distance,
   **Setup width** (how far the zones project to the right) and **Zone
   transparency**.
