@@ -2,197 +2,185 @@
 // =============================================================================
 //  Smart Trade Setup  —  Order Blocks + Fibonacci + Risk/Reward
 // -----------------------------------------------------------------------------
-//  Rebuilds the indicator shown in the reference video (@tradersnotes.ir):
-//    1. Market structure via swing pivots
-//    2. Supply / Demand "order blocks" (the grey boxes around swing tips)
-//    3. A horizontal Support / Resistance line at the active level
-//    4. A Fibonacci retracement (0 .. 1) on the most recent swing leg
-//    5. A full trade setup with Entry, Stop-Loss zone (risk) and Target zone
-//       (reward) drawn as coloured boxes with labels, just like the clip:
-//       "Resistance" -> "Entry Short" -> "Stop-Loss" -> "Target".
+//  Clean, readable trade-setup tool inspired by the reference video.
 //
-//  Works on any symbol / timeframe. Add it to a TradingView chart as an
-//  overlay indicator.
+//  Readability first:
+//   - The trade setup is projected to the RIGHT of the last candle (like the
+//     TradingView position tool) so it never covers price history.
+//   - By default only the latest signal is shown ("Both sides" optional).
+//   - Zones are highly transparent, lines are thin, levels are labelled.
+//
+//  Elements:
+//   1. Swing structure (pivots)
+//   2. Faint supply/demand order blocks at swing tips
+//   3. Thin Support / Resistance lines at the active levels
+//   4. Optional Fibonacci retracement on the latest swing leg
+//   5. Trade setup: Entry / Stop-Loss (risk) / Target (reward) projected forward
 // =============================================================================
-indicator("Smart Trade Setup — OB + Fib + R/R", "Smart Trade Setup", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+indicator("Smart Trade Setup", "Smart Trade Setup", overlay = true, max_boxes_count = 200, max_lines_count = 200, max_labels_count = 200)
 
 // ===================== Inputs ================================================
-grpStr      = "Market structure"
-pivLen      = input.int(5, "Swing strength (pivot length)", minval = 1, group = grpStr, tooltip = "Higher = only larger swings are detected.")
+g_str = "Structure"
+pivLen = input.int(5, "Swing strength", minval = 1, group = g_str, tooltip = "Higher = only larger swings are detected.")
 
-grpOB       = "Order blocks"
-showOB      = input.bool(true,  "Show order blocks", group = grpOB)
-obMax       = input.int(6,      "Max order blocks on chart", minval = 1, maxval = 30, group = grpOB)
-obWidth     = input.int(12,     "Order block width (bars)", minval = 1, group = grpOB)
-obColor     = input.color(color.new(color.gray, 55), "Fill", group = grpOB)
-obBorder    = input.color(color.new(color.gray, 20), "Border", group = grpOB)
+g_ob = "Order blocks"
+showOB   = input.bool(true, "Show order blocks", group = g_ob)
+obMax    = input.int(4, "How many to keep", minval = 1, maxval = 20, group = g_ob)
+obTransp = input.int(90, "Transparency", minval = 50, maxval = 100, group = g_ob)
 
-grpFib      = "Fibonacci retracement"
-showFib     = input.bool(true,  "Show Fibonacci on last swing", group = grpFib)
-fibExtend   = input.int(8,      "Extend right (bars)", minval = 0, group = grpFib)
+g_sr = "Support / Resistance"
+showSR = input.bool(true, "Show S/R lines", group = g_sr)
 
-grpSetup    = "Trade setup (risk / reward)"
-showSetup   = input.bool(true,  "Show trade setup", group = grpSetup)
-rrRatio     = input.float(2.0,  "Reward : Risk", minval = 0.1, step = 0.1, group = grpSetup)
-stopMult    = input.float(1.0,  "Stop buffer (ATR ×)", minval = 0.0, step = 0.1, group = grpSetup)
-setupWidth  = input.int(40,     "Setup box width (bars)", minval = 5, group = grpSetup)
-cRisk       = input.color(color.new(color.red,  82), "Stop-Loss zone", group = grpSetup)
-cReward     = input.color(color.new(color.teal, 82), "Target zone", group = grpSetup)
-cSR         = input.color(color.red, "Support / Resistance line", group = grpSetup)
+g_fib = "Fibonacci"
+showFib = input.bool(false, "Show Fibonacci (last swing)", group = g_fib)
+
+g_set = "Trade setup (risk / reward)"
+setupMode  = input.string("Latest only", "Show setup", options = ["Latest only", "Both sides", "Off"], group = g_set)
+rrRatio    = input.float(2.0, "Reward : Risk", minval = 0.1, step = 0.1, group = g_set)
+stopMult   = input.float(1.0, "Stop buffer (ATR ×)", minval = 0.0, step = 0.1, group = g_set)
+setupFwd   = input.int(30, "Setup width (bars, drawn to the right)", minval = 5, maxval = 300, group = g_set)
+zoneTransp = input.int(85, "Zone transparency", minval = 50, maxval = 100, group = g_set)
+
+// ===================== Derived colours =======================================
+atr     = ta.atr(14)
+cOB     = color.new(color.gray, obTransp)
+cRisk   = color.new(color.red,  zoneTransp)
+cReward = color.new(color.teal, zoneTransp)
 
 // ===================== State =================================================
-atr = ta.atr(14)
-
 var box[] obBoxes = array.new<box>()
 
-// last two confirmed pivots (for the Fibonacci leg)
-var float pvtOlderPx = na
-var int   pvtOlderBar = na
-var float pvtNewerPx  = na
-var int   pvtNewerBar = na
+var float lastHigh    = na
+var int   lastHighBar = na
+var float lastLow     = na
+var int   lastLowBar  = na
+var bool  lastIsHigh  = na
 
-// active SELL setup (drawn at swing highs / resistance)
-var line  seEntry = na
-var line  seSR    = na
-var box   seStop  = na
-var box   seTgt   = na
-var label seLEntry = na
-var label seLStop  = na
-var label seLTgt   = na
-var label seLSR    = na
+// two most recent pivots (for the Fibonacci leg)
+var float prevSig    = na
+var int   prevSigBar = na
+var float lastSig    = na
+var int   lastSigBar = na
 
-// active BUY setup (drawn at swing lows / support)
-var line  buEntry = na
-var line  buSR    = na
-var box   buStop  = na
-var box   buTgt   = na
-var label buLEntry = na
-var label buLStop  = na
-var label buLTgt   = na
-var label buLSR    = na
-
-// active fibonacci drawings
+// live drawing handles (redrawn on the last bar)
+var line  srResLine = na
+var label srResLbl  = na
+var line  srSupLine = na
+var label srSupLbl  = na
 var line[]  fibLines  = array.new<line>()
 var label[] fibLabels = array.new<label>()
+var box[]   setBoxes  = array.new<box>()
+var line[]  setLines  = array.new<line>()
+var label[] setLabels = array.new<label>()
 
-// ===================== Pivot detection =======================================
+// ===================== Pivots ================================================
 ph = ta.pivothigh(high, pivLen, pivLen)
 pl = ta.pivotlow(low, pivLen, pivLen)
 
-newPivot   = false
-pivPrice   = float(na)
-pivBar     = int(na)
-
 if not na(ph)
-    newPivot  := true
-    pivPrice  := ph
-    pivBar    := bar_index - pivLen
+    lastHigh    := ph
+    lastHighBar := bar_index - pivLen
+    lastIsHigh  := true
+    prevSig     := lastSig
+    prevSigBar  := lastSigBar
+    lastSig     := ph
+    lastSigBar  := bar_index - pivLen
 
 if not na(pl)
-    newPivot  := true
-    pivPrice  := pl
-    pivBar    := bar_index - pivLen
+    lastLow    := pl
+    lastLowBar := bar_index - pivLen
+    lastIsHigh := false
+    prevSig    := lastSig
+    prevSigBar := lastSigBar
+    lastSig    := pl
+    lastSigBar := bar_index - pivLen
 
-// shift the pivot history when a new one confirms
-if newPivot
-    pvtOlderPx  := pvtNewerPx
-    pvtOlderBar := pvtNewerBar
-    pvtNewerPx  := pivPrice
-    pvtNewerBar := pivBar
-
-// ===================== Order blocks ==========================================
-if showOB and newPivot
-    obTop = high[pivLen]
-    obBot = low[pivLen]
-    b = box.new(pivBar, obTop, pivBar + obWidth, obBot, border_color = obBorder, bgcolor = obColor)
-    array.push(obBoxes, b)
+// ===================== Order blocks (faint, body-sized) ======================
+if showOB and (not na(ph) or not na(pl))
+    bTop = math.max(open[pivLen], close[pivLen])
+    bBot = math.min(open[pivLen], close[pivLen])
+    bx = box.new(bar_index - pivLen, bTop, bar_index - pivLen + 5, bBot, border_color = color.new(color.gray, 70), bgcolor = cOB)
+    array.push(obBoxes, bx)
     if array.size(obBoxes) > obMax
         box.delete(array.shift(obBoxes))
 
-// ===================== Fibonacci retracement =================================
-fibLevels = array.from(0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
-fibColors = array.from(color.gray, color.maroon, color.orange, color.red, color.green, color.teal, color.gray)
+// ===================== Setup drawing helper ==================================
+drawSetup(bool isSell, float entry, int fromX, int toX, float risk) =>
+    sl  = isSell ? entry + risk : entry - risk
+    tgt = isSell ? entry - risk * rrRatio : entry + risk * rrRatio
+    rb = box.new(fromX, math.max(entry, sl),  toX, math.min(entry, sl),  border_color = color.new(color.red, 55),  bgcolor = cRisk)
+    tb = box.new(fromX, math.max(entry, tgt), toX, math.min(entry, tgt), border_color = color.new(color.teal, 55), bgcolor = cReward)
+    el = line.new(fromX, entry, toX, entry, color = color.new(color.gray, 0), width = 1, style = line.style_dashed)
+    array.push(setBoxes, rb)
+    array.push(setBoxes, tb)
+    array.push(setLines, el)
+    side = isSell ? "Sell" : "Buy"
+    array.push(setLabels, label.new(toX, entry, side + " Entry " + str.tostring(entry, format.mintick), style = label.style_label_left, color = color.new(isSell ? color.red : color.green, 15), textcolor = color.white, size = size.small))
+    array.push(setLabels, label.new(toX, sl,  "Stop-Loss " + str.tostring(sl,  format.mintick), style = label.style_label_left, color = color.new(color.red, 25),  textcolor = color.white, size = size.small))
+    array.push(setLabels, label.new(toX, tgt, "Target " + str.tostring(tgt, format.mintick), style = label.style_label_left, color = color.new(color.teal, 25), textcolor = color.white, size = size.small))
 
-if showFib and newPivot and not na(pvtOlderPx) and not na(pvtNewerPx)
-    // clear previous fib
-    for ln in fibLines
-        line.delete(ln)
+// ===================== Live layer (drawn on the last bar) ====================
+if barstate.islast
+    // ---- clear previous handles ----
+    line.delete(srResLine)
+    label.delete(srResLbl)
+    line.delete(srSupLine)
+    label.delete(srSupLbl)
+    for l in fibLines
+        line.delete(l)
     for lb in fibLabels
         label.delete(lb)
     array.clear(fibLines)
     array.clear(fibLabels)
+    for b in setBoxes
+        box.delete(b)
+    for l in setLines
+        line.delete(l)
+    for lb in setLabels
+        label.delete(lb)
+    array.clear(setBoxes)
+    array.clear(setLines)
+    array.clear(setLabels)
 
-    topPx = math.max(pvtOlderPx, pvtNewerPx)
-    botPx = math.min(pvtOlderPx, pvtNewerPx)
-    xL = math.min(pvtOlderBar, pvtNewerBar)
-    xR = math.max(pvtOlderBar, pvtNewerBar) + fibExtend
+    rightX = bar_index + setupFwd
 
-    for i = 0 to array.size(fibLevels) - 1
-        lvl = array.get(fibLevels, i)
-        px  = botPx + (topPx - botPx) * lvl              // 1.0 at top, 0.0 at bottom
-        col = array.get(fibColors, i)
-        ln  = line.new(xL, px, xR, px, color = color.new(col, 25), width = 1)
-        lb  = label.new(xR, px, str.tostring(lvl, "0.###"), style = label.style_label_left, color = color.new(col, 70), textcolor = color.white, size = size.small)
-        array.push(fibLines, ln)
-        array.push(fibLabels, lb)
+    // ---- Support / Resistance ----
+    if showSR and not na(lastHigh)
+        srResLine := line.new(lastHighBar, lastHigh, rightX, lastHigh, color = color.new(color.red, 0), width = 1)
+        srResLbl  := label.new(rightX, lastHigh, "Resistance", style = label.style_label_left, color = color.new(color.red, 80), textcolor = color.white, size = size.small)
+    if showSR and not na(lastLow)
+        srSupLine := line.new(lastLowBar, lastLow, rightX, lastLow, color = color.new(color.green, 0), width = 1)
+        srSupLbl  := label.new(rightX, lastLow, "Support", style = label.style_label_left, color = color.new(color.green, 80), textcolor = color.white, size = size.small)
 
-// ===================== Trade setup (entry / stop / target) ===================
-// Both sides are maintained independently and stay on the chart at the same
-// time: the SELL setup is refreshed on every swing high, the BUY setup on every
-// swing low — same risk/reward logic, just mirrored.
-risk0 = atr * stopMult
-risk0 := risk0 <= 0 ? syminfo.mintick * 10 : risk0
+    // ---- Fibonacci on the most recent swing leg ----
+    if showFib and not na(prevSig) and not na(lastSig)
+        levels = array.from(0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
+        topPx = math.max(prevSig, lastSig)
+        botPx = math.min(prevSig, lastSig)
+        xL = math.min(prevSigBar, lastSigBar)
+        for i = 0 to array.size(levels) - 1
+            lvl = array.get(levels, i)
+            px  = botPx + (topPx - botPx) * lvl
+            ln  = line.new(xL, px, rightX, px, color = color.new(color.gray, 40), width = 1, style = line.style_dotted)
+            lb  = label.new(xL, px, str.tostring(lvl, "0.###"), style = label.style_label_right, color = color.new(color.gray, 80), textcolor = color.white, size = size.tiny)
+            array.push(fibLines, ln)
+            array.push(fibLabels, lb)
 
-// ---- SELL side (price rejected at resistance) ------------------------------
-if showSetup and not na(ph)
-    line.delete(seEntry)
-    line.delete(seSR)
-    box.delete(seStop)
-    box.delete(seTgt)
-    label.delete(seLEntry)
-    label.delete(seLStop)
-    label.delete(seLTgt)
-    label.delete(seLSR)
-
-    entry = ph
-    x1 = bar_index - pivLen
-    x2 = x1 + setupWidth
-    sl  = entry + risk0
-    tgt = entry - risk0 * rrRatio
-    seStop  := box.new(x1, sl, x2, entry, border_color = color.new(color.red, 40),  bgcolor = cRisk)
-    seTgt   := box.new(x1, entry, x2, tgt, border_color = color.new(color.teal, 40), bgcolor = cReward)
-    seEntry := line.new(x1, entry, x2, entry, color = color.gray, width = 2)
-    seSR    := line.new(x1 - setupWidth, entry, x2, entry, color = cSR, width = 2, style = line.style_solid)
-    seLSR    := label.new(x1, entry, "Resistance", style = label.style_label_down, color = color.new(cSR, 70),        textcolor = color.white, size = size.small)
-    seLEntry := label.new(x2, entry, "Sell Entry", style = label.style_label_left, color = color.new(color.red, 30),  textcolor = color.white, size = size.small)
-    seLStop  := label.new(x2, sl,    "Stop-Loss",  style = label.style_label_left, color = color.new(color.red, 30),  textcolor = color.white, size = size.small)
-    seLTgt   := label.new(x2, tgt,   "Target",     style = label.style_label_left, color = color.new(color.teal, 30), textcolor = color.white, size = size.small)
-
-// ---- BUY side (price supported at demand) ----------------------------------
-if showSetup and not na(pl)
-    line.delete(buEntry)
-    line.delete(buSR)
-    box.delete(buStop)
-    box.delete(buTgt)
-    label.delete(buLEntry)
-    label.delete(buLStop)
-    label.delete(buLTgt)
-    label.delete(buLSR)
-
-    entry = pl
-    x1 = bar_index - pivLen
-    x2 = x1 + setupWidth
-    sl  = entry - risk0
-    tgt = entry + risk0 * rrRatio
-    buStop  := box.new(x1, entry, x2, sl, border_color = color.new(color.red, 40),  bgcolor = cRisk)
-    buTgt   := box.new(x1, tgt, x2, entry, border_color = color.new(color.teal, 40), bgcolor = cReward)
-    buEntry := line.new(x1, entry, x2, entry, color = color.gray, width = 2)
-    buSR    := line.new(x1 - setupWidth, entry, x2, entry, color = color.green, width = 2, style = line.style_solid)
-    buLSR    := label.new(x1, entry, "Support",   style = label.style_label_up,   color = color.new(color.green, 70), textcolor = color.white, size = size.small)
-    buLEntry := label.new(x2, entry, "Buy Entry", style = label.style_label_left, color = color.new(color.green, 30), textcolor = color.white, size = size.small)
-    buLStop  := label.new(x2, sl,    "Stop-Loss", style = label.style_label_left, color = color.new(color.red, 30),   textcolor = color.white, size = size.small)
-    buLTgt   := label.new(x2, tgt,   "Target",    style = label.style_label_left, color = color.new(color.teal, 30),  textcolor = color.white, size = size.small)
+    // ---- Trade setup (projected to the right) ----
+    if setupMode != "Off"
+        risk = atr * stopMult
+        risk := risk <= 0 ? syminfo.mintick * 10 : risk
+        fromX = bar_index
+        if setupMode == "Latest only" and not na(lastIsHigh)
+            entry = lastIsHigh ? lastHigh : lastLow
+            if not na(entry)
+                drawSetup(lastIsHigh, entry, fromX, rightX, risk)
+        else if setupMode == "Both sides"
+            if not na(lastHigh)
+                drawSetup(true, lastHigh, fromX, rightX, risk)
+            if not na(lastLow)
+                drawSetup(false, lastLow, fromX, rightX, risk)
 
 // ===================== Alerts ================================================
-alertcondition(not na(ph), "Sell setup", "A new swing high formed — sell setup updated.")
-alertcondition(not na(pl), "Buy setup",  "A new swing low formed — buy setup updated.")
+alertcondition(not na(ph), "Sell setup", "New swing high — sell setup updated.")
+alertcondition(not na(pl), "Buy setup",  "New swing low — buy setup updated.")

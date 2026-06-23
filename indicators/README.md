@@ -18,16 +18,23 @@ and timeframe:
 | Fibonacci | 0 → 1 levels with colour bands | retracement on the most recent swing leg |
 | Trade setup | "Entry" / "Stop-Loss" / "Target" | Entry line + risk (red) & reward (teal) zones with labels |
 
-Both the **buy** and **sell** sides are shown at the same time, using the same
-mirrored logic:
+### Built for readability
 
-- A confirmed swing **high** refreshes the **Sell** setup — Resistance →
-  Sell Entry, Stop-Loss zone above, Target zone below.
-- A confirmed swing **low** refreshes the **Buy** setup — Support → Buy Entry,
-  Stop-Loss zone below, Target zone above.
+To keep the chart clean (the earlier version covered the candles):
 
-Each side is maintained independently, so the latest buy setup and the latest
-sell setup stay on the chart together.
+- The trade setup is **projected to the right of the last candle** — like the
+  TradingView position tool — so it never paints over price history.
+- Only the **latest** signal is shown by default. Switch **Show setup** to
+  *Both sides* to display the latest buy **and** sell setup together, or *Off*
+  to hide it.
+- Zones are highly transparent, lines are thin, and every level is labelled
+  with its price.
+- **Fibonacci is off by default** (it was the noisiest element); order blocks
+  are faint and body-sized.
+
+Same mirrored logic as before: a swing **high** drives the **Sell** setup
+(Resistance → Stop-Loss above → Target below); a swing **low** drives the
+**Buy** setup (Support → Stop-Loss below → Target above).
 
 ## How to use
 
@@ -39,10 +46,17 @@ sell setup stay on the chart together.
 
 - **Swing strength** – how many bars left/right define a pivot (larger = only
   bigger swings).
-- **Order blocks** – toggle, max count, width and colours.
-- **Fibonacci** – toggle and right-extension of the levels.
-- **Trade setup** – toggle, **Reward : Risk** ratio, **Stop buffer (ATR ×)** for
-  the stop distance, box width and the risk/reward zone colours.
+- **Order blocks** – toggle, how many to keep, transparency.
+- **Support / Resistance** – toggle the thin S/R lines.
+- **Fibonacci** – toggle (off by default).
+- **Trade setup** – **Show setup** (*Latest only* / *Both sides* / *Off*),
+  **Reward : Risk** ratio, **Stop buffer (ATR ×)** for the stop distance,
+  **Setup width** (how far the zones project to the right) and **Zone
+  transparency**.
+
+> Tip: if the zones still feel large, that just reflects the real ATR-based
+> risk on a volatile symbol — raise **Zone transparency** or lower **Setup
+> width** to make it lighter.
 
 ## Alerts
 
