@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Status</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="main-container">
+        <!-- SIDOPANEL -->
+        <div class="sidebar">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="side-logo">
+            <div class="menu">
+                <form method="POST" action="{{ url_for('checkout', namn=namn, mobil=mobil) }}" id="checkoutForm">
+                    <input type="hidden" name="lat" id="lat">
+                    <input type="hidden" name="lon" id="lon">
+                    <button type="submit" class="btn">Checka ut med adress</button>
+                </form>
+            </div>
+        </div>
+        <!-- CENTRALT INNEHÅLL -->
+        <div class="center-content">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="big-logo">
+            <h2>Status</h2>
+            <p>{{ namn }}, du är redan incheckad.<br>Checka ut först.</p>
+        </div>
+    </div>
+    <script>
+        // Lägg till event på checkout-formuläret
+        document.getElementById('checkoutForm').addEventListener('submit', function(e){
+            e.preventDefault();
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    document.getElementById('lat').value = pos.coords.latitude;
+                    document.getElementById('lon').value = pos.coords.longitude;
+                    // Skicka formuläret igen efter GPS
+                    document.getElementById('checkoutForm').submit();
+                }, function(err){
+                    alert('Kunde inte hämta GPS-position!');
+                });
+            } else {
+                alert('GPS kunde inte användas i din webbläsare.');
+            }
+        });
+    </script>
+</body>
+</html>
+
+

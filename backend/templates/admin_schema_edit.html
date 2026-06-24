@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Redigera schemarad</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background-color: #e3f4fb;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .form-container {
+            max-width: 500px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px #00000015;
+        }
+        h2 {
+            text-align: center;
+            color: #20579a;
+        }
+        label {
+            font-weight: 500;
+            margin-top: 10px;
+            display: block;
+            color: #123560;
+        }
+        input[type="text"],
+        input[type="date"],
+        input[type="time"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            border: 1px solid #b5d2e2;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .btn {
+            background: #00b7e5;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: #0097b2;
+        }
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            color: #2567b2;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Redigera schemarad</h2>
+        <form method="POST">
+            <label for="namn">Anställd:</label>
+            <input type="text" name="namn" id="namn" value="{{ row['namn'] }}" required>
+
+            <label for="datum">Datum:</label>
+            <input type="date" name="datum" id="datum" value="{{ row['datum'] }}" required>
+
+            <label for="starttid">Starttid:</label>
+            <input type="time" name="starttid" id="starttid" value="{{ row['starttid'] }}" required>
+
+            <label for="sluttid">Sluttid:</label>
+            <input type="time" name="sluttid" id="sluttid" value="{{ row['sluttid'] }}" required>
+
+            <label for="adress">Adress:</label>
+            <input type="text" name="adress" id="adress" value="{{ row['adress'] }}" required>
+
+            <label for="kommentar">Kommentar:</label>
+            <input type="text" name="kommentar" id="kommentar" value="{{ row['kommentar'] }}">
+
+            <button class="btn" type="submit">Spara ändringar</button>
+        </form>
+        <a href="{{ url_for('admin.admin_schema') }}">Tillbaka</a>
+    </div>
+</body>
+</html>
+
+
+
+
+

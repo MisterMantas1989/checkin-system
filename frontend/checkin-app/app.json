@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "checkin-app",
+    "slug": "checkin-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "light",
+    "scheme": "checkinapp",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "DIN_KEY_HÄR"
+      },
+      "bundleIdentifier": "com.anonymous.checkinapp",
+      "runtimeVersion": {
+        "policy": "appVersion"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.checkinapp",
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "DIN_KEY_HÄR"
+        }
+      },
+      "runtimeVersion": "1.0.0"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "39ae582d-6b91-49bf-9b21-73bf7200858f"
+      }
+    },
+    "plugins": [
+      "expo-notifications"
+    ],
+    "updates": {
+      "url": "https://u.expo.dev/39ae582d-6b91-49bf-9b21-73bf7200858f"
+    }
+  }
+}

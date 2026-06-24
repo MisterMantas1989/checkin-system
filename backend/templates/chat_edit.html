@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Redigera Meddelande</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f0f7fa;
+            padding: 30px;
+        }
+        .edit-container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #174273;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        textarea {
+            min-height: 120px;
+            font-size: 1rem;
+            padding: 10px;
+            margin-bottom: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            resize: vertical;
+        }
+        button {
+            background-color: #5cb0ff;
+            color: white;
+            font-size: 1rem;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4296e7;
+        }
+        a.back-link {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            color: #007B8F;
+            text-decoration: none;
+        }
+        a.back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="edit-container">
+        <h2>Redigera Meddelande</h2>
+        <form method="POST">
+            <textarea name="message" required>{{ msg.message }}</textarea>
+            <button type="submit">Spara ändringar</button>
+        </form>
+        <a href="{{ url_for('chat.chat') }}" class="back-link">Tillbaka</a>
+    </div>
+</body>
+</html>
+
+
+

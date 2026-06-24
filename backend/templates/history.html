@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Incheckningshistorik</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        h1 {
+            margin-top: 30px;
+        }
+        .btn-back {
+            margin-top: 20px;
+            display: inline-block;
+            background-color: #007B8F;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        @media (max-width: 700px) {
+            table, th, td { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Din historik{% if session.get('username') %} för {{ session['username'] }}{% endif %}</h1>
+
+    {% if entries and entries|length > 0 %}
+    <table>
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>In-tid</th>
+                <th>In-adress</th>
+                <th>Ut-tid</th>
+                <th>Ut-adress</th>
+                <th>Arbetad tid (min)</th>
+                <th>Källa</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for e in entries %}
+        <tr>
+            <td>{{ e.checkin_time.strftime('%Y-%m-%d') if e.checkin_time else '' }}</td>
+            <td>{{ e.checkin_time.strftime('%H:%M:%S') if e.checkin_time else '' }}</td>
+            <td>{{ e.checkin_address or '' }}</td>
+            <td>{{ e.checkout_time.strftime('%H:%M:%S') if e.checkout_time else '-' }}</td>
+            <td>{{ e.checkout_address or '' }}</td>
+            <td>{{ e.work_time_minutes or '' }}</td>
+            <td>{{ e.källa or 'Okänd' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Ingen historik hittades.</p>
+    {% endif %}
+
+    <a href="{{ url_for('checkin.checkin') }}" class="btn-back">Tillbaka</a>
+</body>
+</html>
+
+
+
+
+
+

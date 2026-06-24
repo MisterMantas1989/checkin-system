@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: checkin-system
+    env: python
+    buildCommand: 
+|     pip install Flask-Cors
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: gunicorn backend.app:app
+    plan: free
+    autoDeploy: true
+

@@ -1,0 +1,210 @@
+body {
+    background: linear-gradient(to bottom right, #e3f4fb, #c3e4fa);
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.main-container {
+    display: flex;
+    height: 100vh;
+
+.sidebar {
+    background: linear-gradient(180deg, #122850 0%, #20579a 100%);
+    color: #fff;
+    width: 230px;
+    padding-top: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 4px 0 18px -8px #0002;
+    overflow: hidden;
+}
+
+.sidebar-logo-box {
+    background: none;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 44px;
+    width: 142px;
+    height: 182px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.sidebar-logo-box img {
+    max-width: 130px;
+    max-height: 182px;
+    display: block;
+}
+
+}
+
+.menu {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.menu a, .menu button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 85%;
+    max-width: 185px;
+    min-height: 44px;
+    color: #e0f2ff;
+    background: none;
+    text-decoration: none;
+    margin: 12px 0;
+    font-size: 1.12rem;
+    font-weight: 500;
+    border-radius: 12px;
+    transition: background 0.18s, color 0.18s;
+    letter-spacing: 0.01em;
+    text-align: center;
+    box-sizing: border-box;
+    border: none;
+    overflow: hidden;
+    cursor: pointer;
+}
+.menu a:hover, .menu a.active,
+.menu button:hover, .menu button.active {
+    background: #5cb0ff;
+    color: #fff;
+    box-shadow: 0 4px 14px 0 rgba(70,140,220,0.11);
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 0;
+}
+
+.logo-large {
+    max-width: 270px;
+    width: 50vw;
+    margin-bottom: 16px;
+    margin-top: 0;
+    display: block;
+    filter: drop-shadow(0 3px 20px #bde0f8aa);
+}
+
+.page-title {
+    font-size: 2.0rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    margin-top: 0;
+    text-align: center;
+    color: #174273;
+    letter-spacing: 0.01em;
+    text-shadow: 0 3px 16px #e0f2ff;
+}
+
+.status-message {
+    color: #2578b7;
+    font-size: 1.13rem;
+    text-align: center;
+    margin-bottom: 12px;
+    margin-top: 0;
+}
+
+/* Fina inputfält och formulär */
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+input[type="text"], input[type="password"], input[type="date"], input[type="tel"] {
+    width: 220px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #b6e2ff;
+    font-size: 1rem;
+    margin-bottom: 3px;
+    box-sizing: border-box;
+    background: #fff;
+    color: #123257;
+}
+
+.btn-main {
+    background: #27befa;
+    color: #fff;
+    font-weight: 600;
+    padding: 10px 0;
+    border: none;
+    border-radius: 8px;
+    width: 220px;
+    font-size: 1.12rem;
+    margin-top: 8px;
+    transition: background 0.15s;
+    cursor: pointer;
+}
+.btn-main:hover {
+    background: #189dd7;
+}
+
+/* Responsiv meny på små skärmar */
+@media (max-width: 650px) {
+    .container { flex-direction: column; }
+    .sidebar { width: 100%; flex-direction: row; justify-content: center; padding: 18px 0; }
+    .main-content { padding: 8px; }
+    .logo-large { max-width: 60vw; margin-top: 6vw; }
+    .page-title { font-size: 1.1rem; }
+    .status-message { font-size: 1rem; }
+    .menu a, .menu button { width: 94%; max-width: none; }
+.chat-message { border:1px solid #b6e2ff; margin-bottom:10px; }
+.btn-delete { background:#fee; color:#a00; border-radius:5px; border:none; cursor:pointer; }
+.btn-delete:hover { background:#e22; color:#fff; }
+
+}
+.chat-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.chat-actions form,
+.chat-actions a {
+    display: inline-block;
+}
+
+}
+    .delete-btn {
+        background-color: #d9534f;
+        color: white;
+    }
+    .edit-btn {
+        background-color: #5cb0ff;
+        color: white;
+        text-decoration: none;
+    }
+    .delete-btn:hover {
+        background-color: #b92b27;
+    }
+    .edit-btn:hover {
+        background-color: #338fd4;
+
+/* Se till att lägga till den här! */
+ .chat-actions button,
+    .chat-actions a.button-link {
+        width: 68px;           
+        min-width: 68px;
+        max-width: 68px;
+        padding: 5px 0;        
+        font-size: 0.85rem;   
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: center;
+        font-weight: bold;
+        display: block;
+        margin-left: auto;
+        margin-right: 0;
+}

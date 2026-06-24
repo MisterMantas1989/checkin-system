@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Adminpanel Inloggning</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: linear-gradient(120deg, #e0f2ff 0%, #c2e9fb 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-form-wrapper {
+            max-width: 340px;
+            margin: 70px auto;
+            background: rgba(255,255,255,0.99);
+            border-radius: 14px;
+            box-shadow: 0 6px 28px 0 rgba(30, 89, 170, 0.11);
+            padding: 38px 28px 22px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-bottom: 25px;
+            color: #20579a;
+            font-weight: 600;
+            margin-top: 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #123560;
+            font-weight: 500;
+            font-size: 1.03rem;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #b5d2e2;
+            font-size: 1rem;
+            background: #f7fbff;
+            transition: border 0.18s;
+        }
+        input[type="password"]:focus {
+            border: 1.5px solid #00b7e5;
+            outline: none;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px 0;
+            background: #00b7e5;
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-size: 1.07rem;
+            font-weight: 600;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: background 0.18s;
+            box-shadow: 0 2px 6px 0 #bbe3f6;
+        }
+        .btn-login:hover,
+        .btn-login:focus {
+            background: #0097b2;
+        }
+        .error-message {
+            color: #c94444;
+            margin-bottom: 16px;
+            text-align: center;
+            font-size: 1.03rem;
+            font-weight: 500;
+        }
+        @media (max-width: 430px) {
+            .login-form-wrapper {
+                padding: 10px 2vw 10px 2vw;
+                margin: 18px 2vw;
+                max-width: 98vw;
+            }
+            h2 { font-size: 1.05rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-form-wrapper">
+        <h2>Adminpanel Inloggning</h2>
+        {% if error %}
+            <div class="error-message">{{ error }}</div>
+        {% endif %}
+        <form method="POST" autocomplete="off" style="width:100%;">
+            <label for="losenord">Lösenord:</label>
+            <input type="password" id="losenord" name="losenord" required>
+            <button class="btn-login" type="submit">Logga in</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<div class="sidebar">
+    <div class="sidebar-logo-box">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    </div>
+    <div class="menu">
+        <a href="{{ url_for('admin_panel') }}">Instrumentpanel</a>
+        <a href="{{ url_for('admin_schema') }}">Schema</a>
+        <a href="{{ url_for('admin_schema_add') }}">Add schema</a>
+        <a href="{{ url_for('admin_logg') }}">Logg</a>
+        <a href="{{ url_for('chat') }}">Chatt</a>
+        <a href="{{ url_for('admin_logout') }}">Logga ut</a>
+    </div>
+</div>
+

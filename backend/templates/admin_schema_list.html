@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Schemahantering</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        table { border-collapse: collapse; width: 100%; background: #fff;}
+        th, td { border: 1px solid #b5d2e2; padding: 8px; }
+        th { background: #e0f2ff; }
+        tr:nth-child(even) { background: #f7fbff; }
+        a, button { margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center;">Schematabell – Admin</h2>
+    <table>
+        <thead>
+            <tr>
+                {% for col in columns %}
+                    <th>{{ col }}</th>
+                {% endfor %}
+                <th>Åtgärder</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rad in records %}
+                <tr>
+                    {% for col in columns %}
+                        <td>{{ rad[col] }}</td>
+                    {% endfor %}
+                    <td>
+                        <a href="{{ url_for('admin.admin_schema_edit', row_id=rad['row_id']) }}">Redigera</a>
+                        <form method="POST" action="{{ url_for('admin.admin_schema_delete', row_id=rad['row_id']) }}" style="display:inline;">
+                            <button type="submit" onclick="return confirm('Vill du ta bort raden?')">Ta bort</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+    <a href="{{ url_for('admin.admin_panel') }}">Tillbaka till adminpanelen</a>
+</body>
+</html>
+
+

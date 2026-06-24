@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Städfirma RVL RASA AB - Inloggning</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: #f7fbfd;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            background: #007bc1;
+            width: 220px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+        }
+        .sidebar-logo-box img {
+            width: 150px;
+            margin-bottom: 30px;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo {
+            margin-top: 30px;
+            width: 220px;
+        }
+        .login-box {
+            margin: 30px auto;
+            padding: 30px 30px 20px 30px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 16px #0001;
+            width: 90%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .input-field {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #bcd;
+            border-radius: 6px;
+            display: block;
+            font-size: 1.1rem;
+        }
+        .btn {
+            width: 95%;
+            padding: 12px;
+            background: #007bc1;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            margin: 15px 0 0 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #005b90;
+        }
+        #login-status {
+            margin-top: 15px;
+            color: #c00;
+            font-weight: bold;
+        }
+        @media (max-width: 600px) {
+            .main-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                min-height: 60px;
+                flex-direction: row;
+                padding: 10px;
+                justify-content: center;
+            }
+            .main-content {
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- SIDOMENY -->
+        <div class="sidebar">
+            <div class="sidebar-logo-box">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            </div>
+        </div>
+        <!-- HUVUDINNEHÅLL -->
+        <div class="main-content">
+            <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Företagslogga">
+            <div class="login-box">
+                <h2>Logga in</h2>
+                <form method="POST" action="{{ url_for('login') }}">
+                    <input class="input-field" type="text" name="namn" placeholder="För- och efternamn" required>
+                    <input class="input-field" type="tel" name="mobil" placeholder="Mobilnummer (10 siffror)" pattern="[0-9]{10}" required>
+                    <button class="btn" type="submit">Logga in</button>
+                </form>
+                {% if error %}
+                    <div id="login-status">{{ error }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+

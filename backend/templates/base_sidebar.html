@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Checka in</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="main-container">
+        {% include "base_sidebar.html" %}
+        <div class="main-content">
+            <!-- Din innehåll här -->
+            <img src="{{ url_for('static', filename='logo.png') }}" class="logo-large" alt="Logo">
+            <h2 class="page-title">Checka in</h2>
+            <form method="POST" action="{{ url_for('checkin', namn=namn, mobil=mobil) }}">
+                <input type="hidden" name="lat" id="lat">
+                <input type="hidden" name="lon" id="lon">
+                <button type="submit" class="btn-main">Checka in med adress</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            document.getElementById('lat').value = pos.coords.latitude;
+            document.getElementById('lon').value = pos.coords.longitude;
+        }, function(err){
+            alert('Kunde inte hämta GPS-position!');
+        });
+    </script>
+</body>
+</html>
